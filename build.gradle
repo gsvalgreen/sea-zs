@@ -1,0 +1,32 @@
+plugins {
+    id 'org.springframework.boot' version '2.1.6.RELEASE'
+}
+apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'io.spring.dependency-management'
+
+group = 'br.com.fateczs'
+version = '0.0.1-SNAPSHOT'
+
+description = """seazs"""
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+
+
+repositories {
+
+    maven { url "https://repo.maven.apache.org/maven2" }
+}
+dependencies {
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa', version:'2.0.3.RELEASE'
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-thymeleaf', version:'2.0.3.RELEASE'
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-web', version:'2.0.3.RELEASE'
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-actuator', version:'2.0.3.RELEASE'
+    compile group: 'org.codehaus.groovy', name: 'groovy', version:'2.4.13'
+    runtime group: 'org.springframework.boot', name: 'spring-boot-devtools', version:'2.0.3.RELEASE'
+    runtime group: 'mysql', name: 'mysql-connector-java', version:'5.1.46'
+    testCompile group: 'org.springframework.boot', name: 'spring-boot-starter-test', version:'2.0.3.RELEASE'
+}
