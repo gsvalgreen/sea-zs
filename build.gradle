@@ -33,8 +33,8 @@ dependencies {
 }
 
 flyway {
-    url = 'jdbc:mysql://172.17.0.2:3306'
-    user = 'root'
-    password = 'system'
+    url = System.getenv('SEAZS_MYSQL_DB_URL') ?: 'jdbc:mysql://172.17.0.2:3306'
+    user = System.getenv('SEAZS_MYSQL_DB_USER') ?: 'root'
+    password = System.getenv('SEAZS_MYSQL_DB_PASSWORD') ?: 'system'
     schemas = ['seazs']
 }
