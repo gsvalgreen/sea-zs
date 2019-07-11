@@ -1,5 +1,6 @@
 plugins {
     id 'org.springframework.boot' version '2.1.6.RELEASE'
+    id 'org.flywaydb.flyway' version "5.2.4"
 }
 apply plugin: 'java'
 apply plugin: 'maven'
@@ -29,4 +30,11 @@ dependencies {
     runtime group: 'org.springframework.boot', name: 'spring-boot-devtools', version:'2.0.3.RELEASE'
     runtime group: 'mysql', name: 'mysql-connector-java', version:'5.1.46'
     testCompile group: 'org.springframework.boot', name: 'spring-boot-starter-test', version:'2.0.3.RELEASE'
+}
+
+flyway {
+    url = System.getenv('SEAZS_MYSQL_DB_URL') ?: 'jdbc:mysql://172.17.0.2:3306'
+    user = System.getenv('SEAZS_MYSQL_DB_USER') ?: 'root'
+    password = System.getenv('SEAZS_MYSQL_DB_PASSWORD') ?: 'system'
+    schemas = ['seazs']
 }

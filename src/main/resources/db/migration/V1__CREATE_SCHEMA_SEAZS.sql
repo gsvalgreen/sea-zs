@@ -1,6 +1,4 @@
-create schema seazs;
-
-create table tb_curso
+create table if not exists tb_curso
 (
 	id_curso int auto_increment
 		primary key,
@@ -9,7 +7,7 @@ create table tb_curso
 	qtd_semestre int not null
 );
 
-create table tb_disciplina
+create table if not exists tb_disciplina
 (
 	id_disciplina int auto_increment
 		primary key,
@@ -20,7 +18,7 @@ create table tb_disciplina
 		foreign key (id_curso) references tb_curso (id_curso)
 );
 
-create table tb_papel
+create table if not exists tb_papel
 (
 	id_papel int auto_increment
 		primary key,
@@ -28,7 +26,7 @@ create table tb_papel
 	nome_papel varchar(255) not null
 );
 
-create table tb_usuario
+create table if not exists tb_usuario
 (
 	id_usuario int auto_increment
 		primary key,
@@ -52,7 +50,7 @@ create table tb_usuario
 		foreign key (id_curso) references tb_curso (id_curso)
 );
 
-create table tb_evento
+create table if not exists tb_evento
 (
 	id_evento int auto_increment
 		primary key,
@@ -69,7 +67,7 @@ create table tb_evento
 		foreign key (id_curso) references tb_curso (id_curso)
 );
 
-create table tb_agendamento
+create table if not exists tb_agendamento
 (
 	id_agendamento int auto_increment
 		primary key,
@@ -84,7 +82,7 @@ create table tb_agendamento
 		foreign key (id_usuario_organizador) references tb_usuario (id_usuario)
 );
 
-create table tb_atividade
+create table if not exists tb_atividade
 (
 	id_atividade int auto_increment
 		primary key,
@@ -105,7 +103,7 @@ create table tb_atividade
 		foreign key (id_agendamento) references tb_agendamento (id_agendamento)
 );
 
-create table tb_inscricao
+create table if not exists tb_inscricao
 (
 	sq_inscricao int auto_increment
 		primary key,
@@ -126,7 +124,7 @@ create table tb_inscricao
 		foreign key (id_usuario) references tb_usuario (id_usuario)
 );
 
-create table tb_staff_agendamento
+create table if not exists tb_staff_agendamento
 (
 	sq_staff int auto_increment
 		primary key,
@@ -144,7 +142,7 @@ create table tb_staff_agendamento
 		foreign key (id_usuario) references tb_usuario (id_usuario)
 );
 
-create table tb_usuario_disciplina
+create table if not exists tb_usuario_disciplina
 (
 	data_inicio_disciplina date not null,
 	data_fim_disciplina date null,
