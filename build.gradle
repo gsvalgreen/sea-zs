@@ -9,7 +9,7 @@ apply plugin: 'io.spring.dependency-management'
 group = 'br.com.fateczs'
 version = '0.0.1-SNAPSHOT'
 
-description = """seazs"""
+description = "seazs"
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
@@ -33,7 +33,7 @@ dependencies {
 }
 
 flyway {
-    url = System.getenv('SEAZS_MYSQL_DB_URL') ?: 'jdbc:mysql://172.17.0.2:3306'
+    url = System.getenv('SEAZS_MYSQL_DB_URL') ?: 'jdbc:mysql://localhost:3306'
     user = System.getenv('SEAZS_MYSQL_DB_USER') ?: 'root'
     password = System.getenv('SEAZS_MYSQL_DB_PASSWORD') ?: 'system'
     schemas = ['seazs']
