@@ -12,4 +12,3 @@ iniciarContainerBD:
 	sudo docker start seazs-mysql
 	@ echo "Criando/Atualizando banco de dados do sistema"
 	./gradlew flywayMigrate -i
-
