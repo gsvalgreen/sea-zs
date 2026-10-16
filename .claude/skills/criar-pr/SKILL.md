@@ -16,6 +16,7 @@ Use esta skill sempre que o usuário pedir para criar um PR (pull request).
 2. **Prepare a branch**:
    - Se estiver na branch principal, crie uma branch nova com nome descritivo (`feat/...`, `fix/...`, `chore/...`, `docs/...`) antes de commitar.
    - Se houver mudanças não commitadas relevantes, pergunte se devem entrar no PR; nunca inclua arquivos não relacionados (ex.: `package-lock.json`, `*.html` soltos) sem confirmação.
+   - Após confirmação, faça `git add` apenas dos arquivos aprovados e `git commit` antes de qualquer `git push` ou `gh pr create`.
    - Faça `git push -u origin <branch>` se a branch ainda não estiver no remoto.
 3. **Monte o corpo do PR** seguindo o formato abaixo.
 4. **Crie o PR sempre com `gh pr create`** (nunca pela web nem pela API direta). Passe o corpo via heredoc:
@@ -91,4 +92,4 @@ flowchart TD
 
 - Nunca faça `--force` push nem altere a branch principal.
 - Não invente mudanças: tudo no PR deve vir do diff real.
-- Se `gh` não estiver autenticado (`gh auth status` falhar), avise o usuário e sugira `! gh auth login`.
+- Se `gh` não estiver autenticado (`gh auth status` falhar), avise o usuário e sugira `gh auth login`.
