@@ -43,3 +43,40 @@ jacocoTestReport {
         csv.enabled false
     }
 }
+
+// ---------------------------------------------------------------------------
+// Qualidade/CI (mantido isolado; usado por .github/workflows/ci.yml)
+// ---------------------------------------------------------------------------
+// Compativel com Gradle 4.5. Ao migrar o Gradle/Boot/Java, revisar:
+//  - Sonar NAO usa o plugin Gradle: o scanner atual exige JVM 17 e o Gradle 4.5
+//    roda so em JDK <= 8 (testado: plugin 2.7.1 falha com "class file version 61").
+//    O CI usa SonarSource/sonarqube-scan-action + sonar-project.properties.
+//    Apos migrar para Gradle 7+/JDK 17 da para trocar por `id 'org.sonarqube'`
+//    e remover sonar-project.properties e o passo do scan-action;
+//  - jacoco toolVersion: 0.8.5 nao le classes Java 17+ (usar >= 0.8.11);
+//  - sintaxe: `xml.enabled`/`html.enabled` viram `xml.required`/`html.required`
+//    (Gradle 7+); `sonar.coverage.jacoco.xmlReportPaths` permanece;
+//  - setup-java do CI e a versao do JDK no workflow (hoje 8, ver .sdkmanrc);
+//  - revisar os limiares abaixo se a cobertura mudar.
+// Limiar = cobertura medida em 2026-10 (instrucoes 94,5%; branches 75,5%),
+// levemente abaixo. Medida sem o contextLoads (sem MySQL); no CI ele roda.
+jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+            limit {
+                counter = 'INSTRUCTION'
+                value = 'COVEREDRATIO'
+                minimum = 0.90
+            }
+            limit {
+                counter = 'BRANCH'
+                value = 'COVEREDRATIO'
+                minimum = 0.70
+            }
+        }
+    }
+}
+test.finalizedBy jacocoTestReport
+// Gradle 4.5 nao liga jacocoTestCoverageVerification ao `check` automaticamente.
+check.dependsOn jacocoTestCoverageVerification
+jacocoTestCoverageVerification.mustRunAfter jacocoTestReport

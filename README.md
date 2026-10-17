@@ -9,3 +9,38 @@
 5. Juliane Santos
 
 ### Turma de 2016 (1º Semestre) - ADS Noite			
+
+## Ambiente local
+
+Requisitos: Java 8 (`sdk env`) e Docker.
+
+```bash
+cp .env.example .env          # ajuste se necessário; .env não é versionado
+docker compose up -d          # sobe o MySQL (5.7) com healthcheck e volume nomeado
+docker compose ps             # STATUS deve ficar "healthy"
+./gradlew bootRun             # a aplicação usa localhost:3306, db seazs, root/system
+docker compose down           # para (use -v para apagar o volume de dados)
+```
+
+O MySQL fica exposto apenas em `127.0.0.1`. Para migrar para o MySQL 8.4 (plano de modernização), mude `MYSQL_VERSION`, `MYSQL_PLATFORM` e `MYSQL_EXTRA_ARGS` no `.env`.
+
+## Testes e cobertura
+
+```bash
+./gradlew test jacocoTestReport jacocoTestCoverageVerification
+```
+
+O relatório fica em `build/reports/jacoco/test/`. O build falha se a cobertura ficar abaixo do limiar definido em `build.gradle` (instruções 90%, branches 70%). O teste `contextLoads` precisa do MySQL do `docker compose` ativo.
+
+## CI (GitHub Actions)
+
+`.github/workflows/ci.yml` roda build, testes (com MySQL 5.7 como service), verificação de cobertura JaCoCo e análise SonarCloud em push e pull request. Configure em *Settings > Secrets and variables > Actions*:
+
+| Nome | Tipo | Uso |
+| --- | --- | --- |
+| `SONAR_TOKEN` | secret | token do SonarCloud |
+| `SONAR_ORGANIZATION` | variable | chave da organização no SonarCloud |
+| `SONAR_PROJECT_KEY` | variable | chave do projeto no SonarCloud |
+| `SONAR_HOST_URL` | variable (opcional) | padrão `https://sonarcloud.io`; defina para SonarQube próprio |
+
+Sem `SONAR_TOKEN` (ex.: PR de fork) o passo do Sonar é pulado sem falhar.
