@@ -30,7 +30,38 @@ dependencies {
     runtime group: 'org.springframework.boot', name: 'spring-boot-devtools', version:'2.0.3.RELEASE'
     runtime group: 'mysql', name: 'mysql-connector-java', version:'5.1.46'
     testCompile group: 'org.springframework.boot', name: 'spring-boot-starter-test', version:'2.0.3.RELEASE'
+    // integration: banco em memoria (versao gerenciada pelo BOM do Boot)
+    testRuntime group: 'com.h2database', name: 'h2'
+    // featureTest: MySQL real via Docker (a ultima 1.x compativel com Java 8 e JUnit 4)
+    testCompile group: 'org.testcontainers', name: 'mysql', version: '1.19.8'
 }
+
+// Camadas da piramide de testes, separadas por pacote em src/test (unit, integration, featureTest).
+// `test` roda apenas unit; `integrationTest` e `featureTest` rodam as demais camadas; `check` roda as tres.
+test {
+    exclude '**/integration/**'
+    exclude '**/featureTest/**'
+}
+
+task integrationTest(type: Test) {
+    group = 'verification'
+    description = 'Testes de integracao (H2, @DataJpaTest, @WebMvcTest)'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    include '**/integration/**'
+    shouldRunAfter test
+}
+
+task featureTest(type: Test) {
+    group = 'verification'
+    description = 'Testes de fluxo completo com Testcontainers (exigem Docker; sem Docker sao pulados)'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    include '**/featureTest/**'
+    shouldRunAfter integrationTest
+}
+
+check.dependsOn integrationTest, featureTest
 
 jacoco {
     toolVersion = '0.8.5'
