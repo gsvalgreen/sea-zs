@@ -80,11 +80,11 @@ public class InscricaoServiceImpl implements InscricaoService {
 	}
 	
 	private Sort sortByDtInscricaoAsc() {
-		return new Sort(Sort.Direction.ASC, "dtInscricao");
+		return Sort.by(Sort.Direction.ASC, "dtInscricao");
 	}
 	
 	private Sort sortByDtInicioAtividadeAsc() {
-		return new Sort(Sort.Direction.ASC, "atividade.inicioAtividade");
+		return Sort.by(Sort.Direction.ASC, "atividade.inicioAtividade");
 	}
 	
 

@@ -58,7 +58,7 @@ public class EventoServiceImpl implements EventoService {
 	}
 	
 	private Sort sortByInicioAsc() {
-		return new Sort(Sort.Direction.ASC, "inicio");
+		return Sort.by(Sort.Direction.ASC, "inicio");
 	}
 
 }

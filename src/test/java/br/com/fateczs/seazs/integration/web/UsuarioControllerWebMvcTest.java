@@ -104,7 +104,7 @@ public class UsuarioControllerWebMvcTest {
 				.andExpect(jsonPath("$.curso").doesNotExist());
 	}
 
-	/** Protege `spring.jackson.time-zone` do application.properties: datas saem em America/Sao_Paulo (-03:00). */
+	/** Protege `spring.jackson.time-zone` do application.properties: datas saem em America/Sao_Paulo (-03:00; Jackson 2.11+ serializa o offset com dois-pontos, antes era -0300). */
 	@Test
 	public void login_serializaDatasComoStringIsoNoFusoDeSaoPaulo() throws Exception {
 		Usuario u = usuarioCompleto();
@@ -115,7 +115,7 @@ public class UsuarioControllerWebMvcTest {
 		when(usuarioService.validarLogin(any(Usuario.class))).thenReturn(u);
 
 		mvc.perform(post("/usuario/login").contentType(MediaType.APPLICATION_JSON).content(CORPO_USUARIO))
-				.andExpect(jsonPath("$.dataNasc").value("2020-06-15T12:00:00.000-0300"));
+				.andExpect(jsonPath("$.dataNasc").value("2020-06-15T12:00:00.000-03:00"));
 	}
 
 	@Test

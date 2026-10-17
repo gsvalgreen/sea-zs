@@ -25,7 +25,7 @@ public class AgendamentoServiceImpl implements AgendamentoService {
 	private AgendamentoRepository repository;
 	
 	private Sort sortByInicioAsc() {
-		return new Sort(Sort.Direction.ASC, "inicio");
+		return Sort.by(Sort.Direction.ASC, "inicio");
 	}
 	
 	@Override

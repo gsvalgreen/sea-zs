@@ -34,7 +34,7 @@ import br.com.fateczs.seazs.repository.UsuarioRepository;
 /** Repositorios menores: Usuario, Evento, Agendamento e StaffAgendamento. */
 public class DemaisRepositoriosIntegrationTest extends RepositorioIntegracaoBase {
 
-	private static final Sort POR_INICIO = new Sort(Sort.Direction.ASC, "inicio");
+	private static final Sort POR_INICIO = Sort.by(Sort.Direction.ASC, "inicio");
 
 	@Autowired
 	private TestEntityManager em;
@@ -154,7 +154,7 @@ public class DemaisRepositoriosIntegrationTest extends RepositorioIntegracaoBase
 		em.clear();
 
 		List<Agendamento> resultado = staffRepository.findAgendamentosInscrito(ana.getId(),
-				new Sort(Sort.Direction.ASC, "agendamento.inicio"));
+				Sort.by(Sort.Direction.ASC, "agendamento.inicio"));
 
 		assertEquals(Arrays.asList(futuro.getId()), Arrays.asList(resultado.get(0).getId()));
 	}
@@ -169,7 +169,7 @@ public class DemaisRepositoriosIntegrationTest extends RepositorioIntegracaoBase
 		em.clear();
 
 		List<Agendamento> resultado = staffRepository.findAgendamentosInscritoPassado(ana.getId(),
-				new Sort(Sort.Direction.ASC, "agendamento.inicio"));
+				Sort.by(Sort.Direction.ASC, "agendamento.inicio"));
 
 		assertEquals(Arrays.asList(encerradoCompleto.getId()), Arrays.asList(resultado.get(0).getId()));
 	}

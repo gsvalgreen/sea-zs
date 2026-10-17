@@ -23,11 +23,11 @@ public class StaffAgendamentoServiceImpl implements StaffAgendamentoService {
 	private static final Logger log = LoggerFactory.getLogger(StaffAgendamentoServiceImpl.class);
 	
 	private Sort sortByDtInscricaoAsc() {
-		return new Sort(Sort.Direction.ASC, "dtInscricao");
+		return Sort.by(Sort.Direction.ASC, "dtInscricao");
 	}
 	
 	private Sort sortByDtInicioAgendamentoAsc() {
-		return new Sort(Sort.Direction.ASC, "agendamento.inicio");
+		return Sort.by(Sort.Direction.ASC, "agendamento.inicio");
 	}
 	
 	@Autowired

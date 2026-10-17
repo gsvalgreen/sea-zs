@@ -1,9 +1,15 @@
 plugins {
-    id 'org.springframework.boot' version '2.1.6.RELEASE'
+    id 'org.springframework.boot' version '2.7.18'
 }
 apply plugin: 'java'
 apply plugin: 'io.spring.dependency-management'
 apply plugin: 'jacoco'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
 
 group = 'br.com.fateczs'
 version = '0.0.1-SNAPSHOT'
@@ -21,26 +27,29 @@ repositories {
     maven { url "https://repo.maven.apache.org/maven2" }
 }
 dependencies {
-    // Versoes gerenciadas pelo BOM do Boot (2.1.6). Em 2.1.x a Bean Validation ja vem no
-    // starter-web (spring-boot-starter-validation so existe a partir do Boot 2.3).
+    // Versoes gerenciadas pelo BOM do Boot (2.7.18: Hibernate 5.6, H2 2.1, JUnit Jupiter 5.8, Mockito 4.5).
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    // developmentOnly so existe a partir do plugin Boot 2.3; ate la devtools fica em runtimeOnly (como antes).
-    runtimeOnly 'org.springframework.boot:spring-boot-devtools'
-    // Driver mantido em 5.1.46 (o BOM traria 8.0.16); a troca para mysql-connector-j e etapa posterior.
-    runtimeOnly 'mysql:mysql-connector-java:5.1.46'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    // Driver oficial do MySQL 8 (artefato com.mysql:mysql-connector-j, versao do BOM do Boot).
+    runtimeOnly 'com.mysql:mysql-connector-j'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     // integration: banco em memoria (versao gerenciada pelo BOM do Boot)
     testRuntimeOnly 'com.h2database:h2'
-    // featureTest: MySQL real via Docker (1.x, compativel com Java 8 e JUnit 4)
+    // featureTest: MySQL 8 real via Docker (extensao JUnit 5 do Testcontainers)
     testImplementation 'org.testcontainers:mysql:1.21.4'
+    testImplementation 'org.testcontainers:junit-jupiter:1.21.4'
+    // TEMPORARIO (removido no commit de migracao para JUnit 5): roda os testes JUnit 4 ainda nao migrados.
+    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine'
 }
 
 // Camadas da piramide de testes, separadas por pacote em src/test (unit, integration, featureTest).
 // `test` roda apenas unit; `integrationTest` e `featureTest` rodam as demais camadas; `check` roda as tres.
 test {
+    useJUnitPlatform()
     exclude '**/integration/**'
     exclude '**/featureTest/**'
 }
@@ -50,6 +59,7 @@ task integrationTest(type: Test) {
     description = 'Testes de integracao (H2, @DataJpaTest, @WebMvcTest)'
     testClassesDirs = sourceSets.test.output.classesDirs
     classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform()
     include '**/integration/**'
     shouldRunAfter test
 }
@@ -59,6 +69,7 @@ task featureTest(type: Test) {
     description = 'Testes de fluxo completo com Testcontainers (exigem Docker; sem Docker sao pulados, exceto com CI=true)'
     testClassesDirs = sourceSets.test.output.classesDirs
     classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform()
     include '**/featureTest/**'
     shouldRunAfter integrationTest
 }
@@ -71,14 +82,14 @@ check.dependsOn integrationTest, featureTest
 }
 
 jacoco {
-    toolVersion = '0.8.5'
+    toolVersion = '0.8.12'
 }
 
 jacocoTestReport {
     reports {
-        xml.enabled true
-        html.enabled true
-        csv.enabled false
+        xml.required = true
+        html.required = true
+        csv.required = false
     }
 }
 

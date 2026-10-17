@@ -57,7 +57,7 @@ public class AtividadeServiceImpl implements AtividadeService {
 	}
 	
 	private Sort sortByInicioAsc() {
-		return new Sort(Sort.Direction.ASC, "inicioAtividade");
+		return Sort.by(Sort.Direction.ASC, "inicioAtividade");
 	}
 	
 	@Override

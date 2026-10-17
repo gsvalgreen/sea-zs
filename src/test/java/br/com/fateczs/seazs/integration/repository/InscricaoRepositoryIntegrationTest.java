@@ -40,7 +40,7 @@ import br.com.fateczs.seazs.repository.InscricaoRepository;
  */
 public class InscricaoRepositoryIntegrationTest extends RepositorioIntegracaoBase {
 
-	private static final Sort POR_INICIO = new Sort(Sort.Direction.ASC, "atividade.inicioAtividade");
+	private static final Sort POR_INICIO = Sort.by(Sort.Direction.ASC, "atividade.inicioAtividade");
 
 	@Autowired
 	private TestEntityManager em;
