@@ -18,7 +18,7 @@ public class AtividadeServiceImpl implements AtividadeService {
 	@Override
 	public Atividade buscar(Atividade atividade) {
 		// TODO Auto-generated method stub
-		return repository.getOne(atividade.getId());
+		return repository.getReferenceById(atividade.getId());
 	}
 
 	@Override

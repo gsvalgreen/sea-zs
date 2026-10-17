@@ -31,7 +31,7 @@ public class CursoServiceImplTest {
 		Curso entidade = new Curso();
 		entidade.setId(7);
 		Curso esperado = new Curso();
-		when(repository.getOne(7)).thenReturn(esperado);
+		when(repository.getReferenceById(7)).thenReturn(esperado);
 
 		assertEquals(esperado, service.buscar(entidade));
 	}

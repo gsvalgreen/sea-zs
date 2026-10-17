@@ -31,7 +31,7 @@ public class DisciplinaServiceImplTest {
 		Disciplina entidade = new Disciplina();
 		entidade.setId(7);
 		Disciplina esperado = new Disciplina();
-		when(repository.getOne(7)).thenReturn(esperado);
+		when(repository.getReferenceById(7)).thenReturn(esperado);
 
 		assertEquals(esperado, service.buscar(entidade));
 	}

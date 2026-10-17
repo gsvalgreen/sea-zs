@@ -83,7 +83,7 @@ public class InscricaoServiceImplTest {
 		inscricao.setCheckIn(checkIn);
 		inscricao.setCheckOut(checkOut);
 		inscricao.setPontuacaoRecebida(0);
-		when(repository.getOne(1)).thenReturn(inscricao);
+		when(repository.getReferenceById(1)).thenReturn(inscricao);
 		return inscricao;
 	}
 
@@ -102,7 +102,7 @@ public class InscricaoServiceImplTest {
 	@Test
 	public void buscarUsaSequencialDaInscricao() {
 		Inscricao esperado = new Inscricao();
-		when(repository.getOne(1)).thenReturn(esperado);
+		when(repository.getReferenceById(1)).thenReturn(esperado);
 		assertEquals(esperado, service.buscar(requisicao()));
 	}
 

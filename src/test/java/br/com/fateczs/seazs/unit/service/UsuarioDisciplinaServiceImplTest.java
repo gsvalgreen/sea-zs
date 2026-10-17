@@ -35,7 +35,7 @@ public class UsuarioDisciplinaServiceImplTest {
 		UsuarioDisciplina entrada = new UsuarioDisciplina();
 		entrada.setIdUsuarioDisciplina(id);
 		UsuarioDisciplina esperado = new UsuarioDisciplina();
-		when(repository.getOne(id)).thenReturn(esperado);
+		when(repository.getReferenceById(id)).thenReturn(esperado);
 		assertEquals(esperado, service.buscar(entrada));
 	}
 

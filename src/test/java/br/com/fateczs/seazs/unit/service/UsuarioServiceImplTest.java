@@ -31,7 +31,7 @@ public class UsuarioServiceImplTest {
 		Usuario entidade = new Usuario();
 		entidade.setId(7);
 		Usuario esperado = new Usuario();
-		when(repository.getOne(7)).thenReturn(esperado);
+		when(repository.getReferenceById(7)).thenReturn(esperado);
 
 		assertEquals(esperado, service.buscar(entidade));
 	}
@@ -92,7 +92,7 @@ public class UsuarioServiceImplTest {
 		Usuario persistido = new Usuario();
 		persistido.setNome("Ana");
 		persistido.setTipoUsuario(br.com.fateczs.seazs.utils.TipoUsuario.ALUNO);
-		when(repository.getOne(3)).thenReturn(persistido);
+		when(repository.getReferenceById(3)).thenReturn(persistido);
 
 		br.com.fateczs.seazs.model.CrachaUsuario cracha = service.emitirCracha(entrada);
 

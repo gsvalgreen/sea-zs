@@ -38,7 +38,7 @@ public class AtividadeServiceImplTest {
 		Atividade entrada = new Atividade();
 		entrada.setId(5);
 		Atividade esperado = new Atividade();
-		when(repository.getOne(5)).thenReturn(esperado);
+		when(repository.getReferenceById(5)).thenReturn(esperado);
 		assertEquals(esperado, service.buscar(entrada));
 	}
 

@@ -13,7 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -45,13 +45,13 @@ public class EntidadesAninhadasWebMvcTest {
 
 	@Autowired
 	private MockMvc mvc;
-	@MockBean
+	@MockitoBean
 	private EventoService eventoService;
-	@MockBean
+	@MockitoBean
 	private AgendamentoService agendamentoService;
-	@MockBean
+	@MockitoBean
 	private InscricaoService inscricaoService;
-	@MockBean
+	@MockitoBean
 	private CertificadoService certificadoService;
 
 	private Usuario ana;

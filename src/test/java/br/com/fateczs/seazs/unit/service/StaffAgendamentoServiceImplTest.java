@@ -81,7 +81,7 @@ public class StaffAgendamentoServiceImplTest {
 		StaffAgendamento entrada = new StaffAgendamento();
 		entrada.setSequencialStaff(11);
 		StaffAgendamento esperado = new StaffAgendamento();
-		when(repository.getOne(11)).thenReturn(esperado);
+		when(repository.getReferenceById(11)).thenReturn(esperado);
 		assertEquals(esperado, service.buscar(entrada));
 	}
 

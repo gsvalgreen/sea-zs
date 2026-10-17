@@ -34,7 +34,7 @@ public class EventoServiceImplTest {
 		Evento entrada = new Evento();
 		entrada.setId(4);
 		Evento esperado = new Evento();
-		when(repository.getOne(4)).thenReturn(esperado);
+		when(repository.getReferenceById(4)).thenReturn(esperado);
 		assertEquals(esperado, service.buscar(entrada));
 	}
 

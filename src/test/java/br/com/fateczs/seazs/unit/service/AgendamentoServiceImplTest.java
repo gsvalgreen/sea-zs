@@ -36,7 +36,7 @@ public class AgendamentoServiceImplTest {
 		Agendamento entrada = new Agendamento();
 		entrada.setId(2);
 		Agendamento esperado = new Agendamento();
-		when(repository.getOne(2)).thenReturn(esperado);
+		when(repository.getReferenceById(2)).thenReturn(esperado);
 		assertEquals(esperado, service.buscar(entrada));
 	}
 

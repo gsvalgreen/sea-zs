@@ -32,7 +32,7 @@ public class InscricaoServiceImpl implements InscricaoService {
 	
 	@Override
 	public Inscricao buscar(Inscricao inscricao) {
-		return repository.getOne(inscricao.getSequencialInscricao());
+		return repository.getReferenceById(inscricao.getSequencialInscricao());
 	}
 
 	@Override

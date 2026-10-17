@@ -34,7 +34,9 @@ import com.jayway.jsonpath.JsonPath;
  * Relogio: ha um bean Clock, mas os featureTest optam por manter o relogio real. As janelas de presenca
  * sao montadas relativas a "agora" com margem de minutos; bordas exatas ficam nos testes unitarios (Clock fixo).
  *
- * Migracao futura: Boot 3.1+ = {@code @ServiceConnection} no lugar do inicializador abaixo.
+ * Por que nao {@code @ServiceConnection}: ele exige um container estatico gerenciado pela extensao
+ * {@code @Testcontainers}, que sobe (ou pula) antes do nosso controle; o inicializador abaixo e o que permite
+ * subir o MySQL apenas apos checar o Docker e FALHAR com CI=true em vez de pular.
  */
 @SpringBootTest
 @AutoConfigureMockMvc

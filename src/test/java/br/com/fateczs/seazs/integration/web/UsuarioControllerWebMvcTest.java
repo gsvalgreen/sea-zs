@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -32,8 +32,7 @@ import br.com.fateczs.seazs.service.UsuarioService;
  * Serializacao/desserializacao JSON de {@link UsuarioController} com o contexto web real
  * (Jackson do Boot, validacao, propriedades do application.properties) e o service mockado.
  *
- * Migracao: Boot 3 = {@code javax.validation} -> {@code jakarta.validation} (nada aqui usa);
- * Boot 3.4+/4 troca {@code @MockBean} por {@code @MockitoBean};
+ * Boot 3.4+ usa {@code @MockitoBean} (no lugar de {@code @MockBean});
  * Boot 4 move {@code @WebMvcTest} para {@code org.springframework.boot.webmvc.test.autoconfigure}.
  */
 @WebMvcTest(UsuarioController.class)
@@ -41,7 +40,7 @@ public class UsuarioControllerWebMvcTest {
 
 	@Autowired
 	private MockMvc mvc;
-	@MockBean
+	@MockitoBean
 	private UsuarioService usuarioService;
 
 	private static final String CORPO_USUARIO = "{\"id\":1,\"email\":\"ana@teste.com\",\"senha\":\"segredo123\"}";

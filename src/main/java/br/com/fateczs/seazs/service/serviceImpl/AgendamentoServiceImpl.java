@@ -31,7 +31,7 @@ public class AgendamentoServiceImpl implements AgendamentoService {
 	@Override
 	public Agendamento buscar(Agendamento agendamento) {
 		// TODO Auto-generated method stub
-		return repository.getOne(agendamento.getId());
+		return repository.getReferenceById(agendamento.getId());
 	}
 
 	@Override

@@ -31,7 +31,7 @@ public class PapelServiceImplTest {
 		Papel entidade = new Papel();
 		entidade.setId(7);
 		Papel esperado = new Papel();
-		when(repository.getOne(7)).thenReturn(esperado);
+		when(repository.getReferenceById(7)).thenReturn(esperado);
 
 		assertEquals(esperado, service.buscar(entidade));
 	}

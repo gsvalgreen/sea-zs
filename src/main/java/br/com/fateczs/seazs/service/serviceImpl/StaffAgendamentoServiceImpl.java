@@ -42,7 +42,7 @@ public class StaffAgendamentoServiceImpl implements StaffAgendamentoService {
 
 	@Override
 	public StaffAgendamento buscar(StaffAgendamento staff) {
-		return repository.getOne(staff.getSequencialStaff());
+		return repository.getReferenceById(staff.getSequencialStaff());
 	}
 
 	@Override
