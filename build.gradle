@@ -7,7 +7,7 @@ apply plugin: 'jacoco'
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(25)
     }
 }
 
@@ -81,13 +81,19 @@ task featureTest(type: Test) {
 
 check.dependsOn integrationTest, featureTest
 
+// JDK 21+ avisa quando o Mockito/ByteBuddy carrega o agente dinamicamente; liberar explicitamente nas tres camadas.
+[test, integrationTest, featureTest].each { it.jvmArgs '-XX:+EnableDynamicAgentLoading' }
+
 // Evita que um .exec antigo (de execucao anterior) entre na cobertura combinada.
-[test, integrationTest, featureTest].each { t ->
-    t.doFirst { delete t.extensions.getByType(JacocoTaskExtension).destinationFile }
+// A extensao do JaCoCo e lida na configuracao (acessar Task.extensions na execucao e depreciado no Gradle 9).
+def arquivosExecJacoco = [test, integrationTest, featureTest].collect { t ->
+    def arquivoExec = t.extensions.getByType(JacocoTaskExtension).destinationFile
+    t.doFirst { delete arquivoExec }
+    arquivoExec
 }
 
 jacoco {
-    toolVersion = '0.8.12'
+    toolVersion = '0.8.15'
 }
 
 jacocoTestReport {
@@ -101,10 +107,9 @@ jacocoTestReport {
 // ---------------------------------------------------------------------------
 // Qualidade/CI (mantido isolado; usado por .github/workflows/ci.yml)
 // ---------------------------------------------------------------------------
-// Gradle 8.14 / JDK 17 / jacoco 0.8.12. Pendencias para as proximas etapas do plano:
-//  - Sonar continua via SonarSource/sonarqube-scan-action + sonar-project.properties (o scanner exige JVM 17,
-//    que agora e a JVM do build): da para trocar por `id 'org.sonarqube'` e remover o passo do scan-action;
-//  - Gradle 9: `xml.required`/`html.required` ja estao na sintaxe nova; `sonar.coverage.jacoco.xmlReportPaths` permanece;
+// Gradle 9.8 / JDK 25 / jacoco 0.8.15. Pendencias para as proximas etapas do plano:
+//  - Sonar segue via SonarSource/sonarqube-scan-action + sonar-project.properties: o plugin `org.sonarqube` exigiria
+//    expor SONAR_TOKEN ao passo de build (que executa codigo do PR) ou duplicar o gate; o scan-action roda em passo separado;
 //  - revisar os limiares abaixo se a cobertura mudar.
 // Limiar = cobertura medida em 2026-10 (instrucoes 94,5%; branches 75,5%),
 // levemente abaixo. Medida sem o contextLoads (sem MySQL); no CI ele roda.
@@ -134,8 +139,7 @@ jacocoTestCoverageVerification.mustRunAfter jacocoTestReport
 // Com `build`/`check` o relatorio roda de novo apos as tres camadas (check.dependsOn abaixo);
 // `.exec` ausente (ex.: featureTest pulado sem Docker) e ignorado pelo filtro `exists`.
 def execucoesJacoco = files({
-    [test, integrationTest, featureTest].collect { it.extensions.getByType(JacocoTaskExtension).destinationFile }
-            .findAll { it.exists() }
+    arquivosExecJacoco.findAll { it.exists() }
 })
 jacocoTestReport.executionData.setFrom(execucoesJacoco)
 jacocoTestCoverageVerification.executionData.setFrom(execucoesJacoco)
