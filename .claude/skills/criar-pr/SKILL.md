@@ -9,6 +9,8 @@ Use esta skill sempre que o usuário pedir para criar um PR (pull request).
 
 ## Passos
 
+0. **Revisão obrigatória**: antes de qualquer outro passo, confirme que o subagent `revisor-codigo` revisou as mudanças desta branch e deu veredito `APROVADO` ou `APROVADO COM RESSALVAS`. Se ainda não revisou, acione-o agora (Agent com `subagent_type: revisor-codigo`). Se o veredito for `REPROVADO`, não crie o PR: encaminhe os achados ao agente autor, aguarde as correções e peça nova revisão.
+
 1. **Levante o contexto** (em paralelo):
    - `git status` e `git branch --show-current`
    - `git log <base>..HEAD --oneline` e `git diff <base>...HEAD --stat`, onde `<base>` é a branch principal (`master` neste repo, confirme com `gh repo view --json defaultBranchRef`).
