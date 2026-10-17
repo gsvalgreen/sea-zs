@@ -12,7 +12,7 @@
 
 ## Ambiente local
 
-Requisitos: Java 17 (`sdk env`) e Docker.
+Requisitos: Java 25 (`sdk env`) e Docker.
 
 ```bash
 cp .env.example .env          # ajuste se necessário; .env não é versionado

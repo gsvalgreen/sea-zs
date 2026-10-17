@@ -39,12 +39,12 @@ jobs:
           # Sonar precisa do historico completo para blame/novo codigo.
           fetch-depth: 0
 
-      # Java 17 (igual ao .sdkmanrc e ao toolchain do build.gradle; o wrapper e o Gradle 8.14).
+      # Java 25 (igual ao .sdkmanrc e ao toolchain do build.gradle; o wrapper e o Gradle 9.8).
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
-          # cache via setup-java (o wrapper baixa o Gradle 8.14.6).
+          java-version: '25'
+          # cache via setup-java (o wrapper baixa o Gradle 9.8.1).
           cache: gradle
 
       - name: Build, testes e cobertura (JaCoCo)

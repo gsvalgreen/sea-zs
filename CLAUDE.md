@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-`sea-zs` (Gradle project `seazs`) is a Spring Boot / Java web app (currently Boot 3.5.x on Java 17, Gradle 8.14, being modernized per `docs/PLANO-MODERNIZACAO.md`; `build.gradle` and `.sdkmanrc` are the source of truth for versions) (FATEC ZS, ADS Noite 2016/1) for managing academic events: events, activities (`Atividade`), schedules (`Agendamento`), enrollments (`Inscricao`), staff assignments, courses/subjects, users/roles, attendance certificates and a semester score report. Domain names are in Portuguese.
+`sea-zs` (Gradle project `seazs`) is a Spring Boot / Java web app (currently Boot 3.5.x on Java 25, Gradle 9.8, being modernized per `docs/PLANO-MODERNIZACAO.md`; `build.gradle` and `.sdkmanrc` are the source of truth for versions) (FATEC ZS, ADS Noite 2016/1) for managing academic events: events, activities (`Atividade`), schedules (`Agendamento`), enrollments (`Inscricao`), staff assignments, courses/subjects, users/roles, attendance certificates and a semester score report. Domain names are in Portuguese.
 
 ## Commands
 
-- The JDK version is pinned in `.sdkmanrc` (currently Java 17; run `sdk env`) and in the Gradle toolchain in `build.gradle`.
+- The JDK version is pinned in `.sdkmanrc` (currently Java 25; run `sdk env`) and in the Gradle toolchain in `build.gradle`.
 - Database: MySQL 8.4 on `localhost:3306`, db `seazs`, user `root` / password `system` (see `src/main/resources/application.properties`). Start it with the repo `Dockerfile`:
   `docker build -t seazs-mysql . && docker run -d -p 3306:3306 --name seazs-mysql seazs-mysql`, or `docker compose up -d` (see `README.md`)
 - Tests (Gradle tasks, one per pyramid layer, split by package under `src/test`):
