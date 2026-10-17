@@ -77,3 +77,6 @@ jacocoTestCoverageVerification {
     }
 }
 test.finalizedBy jacocoTestReport
+// Gradle 4.5 nao liga jacocoTestCoverageVerification ao `check` automaticamente.
+check.dependsOn jacocoTestCoverageVerification
+jacocoTestCoverageVerification.mustRunAfter jacocoTestReport

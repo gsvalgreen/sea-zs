@@ -2,6 +2,7 @@ name: CI
 
 on:
   push:
+    branches: [master]
   pull_request:
 
 # Cancela execucoes antigas da mesma branch/PR.
@@ -16,9 +17,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    env:
-      # Secrets chegam vazios em PR de fork: o passo do Sonar e pulado nesse caso.
-      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     services:
       mysql:
         image: mysql:5.7
@@ -50,7 +48,8 @@ jobs:
 
       - name: Build, testes e cobertura (JaCoCo)
         # `build` executa test, jacocoTestReport (finalizedBy) e
-        # jacocoTestCoverageVerification (via check): falha abaixo do limiar.
+        # jacocoTestCoverageVerification (check.dependsOn no build.gradle):
+        # falha abaixo do limiar. O SONAR_TOKEN nao e exposto a este passo.
         run: ./gradlew build --no-daemon
         env:
           # useSSL=false: driver 5.1.46 + MySQL 5.7 sem TLS 1.0/1.1 no JDK 8 recente.
@@ -58,10 +57,27 @@ jobs:
           SPRING_DATASOURCE_USERNAME: root
           SPRING_DATASOURCE_PASSWORD: system
 
+      # Detecta se o Sonar pode rodar, sem imprimir o secret. Em PR de fork o
+      # secret chega vazio. O token so e injetado neste passo e no scan.
+      - name: Verificar configuracao do Sonar
+        id: sonar
+        env:
+          HAS_TOKEN: ${{ secrets.SONAR_TOKEN != '' }}
+          HAS_ORG: ${{ vars.SONAR_ORGANIZATION != '' }}
+          HAS_KEY: ${{ vars.SONAR_PROJECT_KEY != '' }}
+        run: |
+          if [ "$HAS_TOKEN" = "true" ] && [ "$HAS_ORG" = "true" ] && [ "$HAS_KEY" = "true" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Analise Sonar pulada: SONAR_TOKEN (secret) ou vars SONAR_ORGANIZATION/SONAR_PROJECT_KEY ausentes (ex.: PR de fork)."
+          fi
+
       - name: Analise SonarCloud
-        if: ${{ env.SONAR_TOKEN != '' && vars.SONAR_ORGANIZATION != '' && vars.SONAR_PROJECT_KEY != '' }}
+        if: steps.sonar.outputs.enabled == 'true'
         uses: SonarSource/sonarqube-scan-action@v5
         env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL || 'https://sonarcloud.io' }}
         with:
           args: >
