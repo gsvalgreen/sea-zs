@@ -5,10 +5,10 @@ on:
     branches: [master]
   pull_request:
 
-# Cancela execucoes antigas da mesma branch/PR.
+# Cancela execucoes antigas apenas em PRs; em push para master todas completam.
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -34,6 +34,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # Nao deixa o GITHUB_TOKEN no .git/config: o build executa codigo do PR.
+          persist-credentials: false
           # Sonar precisa do historico completo para blame/novo codigo.
           fetch-depth: 0
 
