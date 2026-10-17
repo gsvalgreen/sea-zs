@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-`sea-zs` (Gradle project `seazs`) is a Spring Boot / Java web app (currently Boot 2.7.x on Java 17, being modernized per `docs/PLANO-MODERNIZACAO.md`; `build.gradle` and `.sdkmanrc` are the source of truth for versions) (FATEC ZS, ADS Noite 2016/1) for managing academic events: events, activities (`Atividade`), schedules (`Agendamento`), enrollments (`Inscricao`), staff assignments, courses/subjects, users/roles, attendance certificates and a semester score report. Domain names are in Portuguese.
+`sea-zs` (Gradle project `seazs`) is a Spring Boot / Java web app (currently Boot 3.5.x on Java 17, Gradle 8.14, being modernized per `docs/PLANO-MODERNIZACAO.md`; `build.gradle` and `.sdkmanrc` are the source of truth for versions) (FATEC ZS, ADS Noite 2016/1) for managing academic events: events, activities (`Atividade`), schedules (`Agendamento`), enrollments (`Inscricao`), staff assignments, courses/subjects, users/roles, attendance certificates and a semester score report. Domain names are in Portuguese.
 
 ## Commands
 

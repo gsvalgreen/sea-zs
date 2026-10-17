@@ -1,5 +1,5 @@
 plugins {
-    id 'org.springframework.boot' version '2.7.18'
+    id 'org.springframework.boot' version '3.5.16'
 }
 apply plugin: 'java'
 apply plugin: 'io.spring.dependency-management'
@@ -27,7 +27,7 @@ repositories {
     maven { url "https://repo.maven.apache.org/maven2" }
 }
 dependencies {
-    // Versoes gerenciadas pelo BOM do Boot (2.7.18: Hibernate 5.6, H2 2.1, JUnit Jupiter 5.8, Mockito 4.5).
+    // Versoes gerenciadas pelo BOM do Boot (3.5.x: Hibernate 6.6, H2 2.3, JUnit Jupiter 5.12, Mockito 5.17, Testcontainers 1.21).
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
     implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -40,8 +40,8 @@ dependencies {
     // integration: banco em memoria (versao gerenciada pelo BOM do Boot)
     testRuntimeOnly 'com.h2database:h2'
     // featureTest: MySQL 8 real via Docker (extensao JUnit 5 do Testcontainers)
-    testImplementation 'org.testcontainers:mysql:1.21.4'
-    testImplementation 'org.testcontainers:junit-jupiter:1.21.4'
+    testImplementation 'org.testcontainers:mysql'
+    testImplementation 'org.testcontainers:junit-jupiter'
 }
 
 // Camadas da piramide de testes, separadas por pacote em src/test (unit, integration, featureTest).
@@ -94,10 +94,10 @@ jacocoTestReport {
 // ---------------------------------------------------------------------------
 // Qualidade/CI (mantido isolado; usado por .github/workflows/ci.yml)
 // ---------------------------------------------------------------------------
-// Gradle 7.6 / JDK 17 / jacoco 0.8.12. Pendencias para as proximas etapas do plano:
+// Gradle 8.14 / JDK 17 / jacoco 0.8.12. Pendencias para as proximas etapas do plano:
 //  - Sonar continua via SonarSource/sonarqube-scan-action + sonar-project.properties (o scanner exige JVM 17,
 //    que agora e a JVM do build): da para trocar por `id 'org.sonarqube'` e remover o passo do scan-action;
-//  - Gradle 8+: `xml.required`/`html.required` ja estao na sintaxe nova; `sonar.coverage.jacoco.xmlReportPaths` permanece;
+//  - Gradle 9: `xml.required`/`html.required` ja estao na sintaxe nova; `sonar.coverage.jacoco.xmlReportPaths` permanece;
 //  - revisar os limiares abaixo se a cobertura mudar.
 // Limiar = cobertura medida em 2026-10 (instrucoes 94,5%; branches 75,5%),
 // levemente abaixo. Medida sem o contextLoads (sem MySQL); no CI ele roda.
