@@ -28,11 +28,11 @@ public class LoginFeatureTest extends FeatureTestBase {
 	}
 
 	/**
-	 * Caracterizacao (divergencia H2 x MySQL): EXPECTATIVA TEORICA, ainda nao confirmada por execucao. Pela
-	 * semantica da collation utf8mb4_unicode_ci (case-insensitive), a query derivada de login deveria aceitar
-	 * "SEGREDO123" para quem tem senha "Segredo123". A confirmar na primeira execucao com Docker; se o MySQL
-	 * se comportar diferente, ajustar ou remover este teste. BCrypt (Fase 2) elimina o comportamento.
-	 * So faz sentido no MySQL real, nao no H2.
+	 * Caracterizacao (divergencia H2 x MySQL), CONFIRMADA por execucao em MySQL 5.7 real (Testcontainers) com
+	 * --collation-server=utf8mb4_unicode_ci: a query derivada getByEmailAndSenha compara a senha sem diferenciar
+	 * maiusculas de minusculas, entao "SEGREDO123" autentica quem tem senha "Segredo123" (UsuarioRepository.java:11).
+	 * No H2 (camada integration) a comparacao e case-sensitive e esse login falharia. Comportamento inseguro que
+	 * a adocao de BCrypt (Fase 2) elimina; nesse momento este teste deve ser invertido/removido.
 	 */
 	@Test
 	public void login_hoje_ignoraDiferencaDeCaixaNaSenha_collationDoMySql() throws Exception {
