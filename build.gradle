@@ -29,6 +29,10 @@ tasks.withType(JavaCompile) {
 ext['tomcat.version'] = '10.1.61'
 ext['jackson-bom.version'] = '2.21.7'
 
+configurations {
+    mockitoAgent
+}
+
 repositories {
 
     maven { url = "https://repo.maven.apache.org/maven2" }
@@ -49,6 +53,12 @@ dependencies {
     // featureTest: MySQL 8 real via Docker (extensao JUnit 5 do Testcontainers)
     testImplementation 'org.testcontainers:mysql'
     testImplementation 'org.testcontainers:junit-jupiter'
+    // Agente do Mockito (recomendado no JDK 21+): carregado via -javaagent em vez de auto-attach dinamico.
+    // commons-compress 1.24.0 (transitiva do Testcontainers, so em teste; fora do BOM): GHSA-4265-ccf5-phj5 e GHSA-4g9r-vxhx-9pgx (corrigidos em 1.26.0).
+    constraints {
+        testImplementation('org.apache.commons:commons-compress:1.28.0') { because 'advisories do OSV na 1.24.0' }
+    }
+    mockitoAgent('org.mockito:mockito-core') { transitive = false }
 }
 
 // Camadas da piramide de testes, separadas por pacote em src/test (unit, integration, featureTest).
@@ -81,8 +91,11 @@ task featureTest(type: Test) {
 
 check.dependsOn integrationTest, featureTest
 
-// JDK 21+ avisa quando o Mockito/ByteBuddy carrega o agente dinamicamente; liberar explicitamente nas tres camadas.
-[test, integrationTest, featureTest].each { it.jvmArgs '-XX:+EnableDynamicAgentLoading' }
+// JDK 21+ avisa quando o Mockito/ByteBuddy carrega o agente dinamicamente; carregar o agente do Mockito via -javaagent nas tres camadas
+// (sem -XX:+EnableDynamicAgentLoading). O provider resolve a configuracao so na execucao.
+[test, integrationTest, featureTest].each { t ->
+    t.jvmArgumentProviders.add({ ["-javaagent:${configurations.mockitoAgent.asPath}".toString()] } as CommandLineArgumentProvider)
+}
 
 // Evita que um .exec antigo (de execucao anterior) entre na cobertura combinada.
 // A extensao do JaCoCo e lida na configuracao (acessar Task.extensions na execucao e depreciado no Gradle 9).
