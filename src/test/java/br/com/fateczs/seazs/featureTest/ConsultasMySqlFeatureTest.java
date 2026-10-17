@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -70,7 +71,7 @@ public class ConsultasMySqlFeatureTest extends FeatureTestBase {
 		return agendamentos.save(agendamento(eventos.save(evento(unico("Evento"), criador)), criador, PASSADO, FUTURO));
 	}
 
-	private Atividade novaAtividade(Agendamento ag, String nome, java.util.Date inicio, java.util.Date fim) {
+	private Atividade novaAtividade(Agendamento ag, String nome, Date inicio, Date fim) {
 		return atividades.save(atividade(unico(nome), ag, inicio, fim));
 	}
 
@@ -142,6 +143,7 @@ public class ConsultasMySqlFeatureTest extends FeatureTestBase {
 				data(2024, Calendar.AUGUST, 10, 9), true, true, 99));
 		staffs.save(staff(ag, ana, data(2024, Calendar.JUNE, 1, 9), true, true, 20));
 
+		// 27 = 3 (no limite inicial) + 4 (no limite final) + 20 (staff em junho); os 99 de agosto ficam de fora.
 		assertEquals(Integer.valueOf(27), inscricoes.somaPontuacaoRecebidaNoSemestre(ana.getId(), ini, fim));
 		assertNull(inscricoes.somaPontuacaoRecebidaNoSemestre(novoUsuario().getId(), ini, fim));
 	}
