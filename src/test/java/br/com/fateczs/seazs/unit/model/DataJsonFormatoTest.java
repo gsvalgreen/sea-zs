@@ -13,9 +13,9 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import br.com.fateczs.seazs.model.Evento;
 
 /**
- * Caracteriza o formato de data devolvido pela API (Jackson do Boot 3.5 (mesmo formato do Boot 2.7) com
- * spring.jackson.time-zone=America/Sao_Paulo), para detectar mudanca silenciosa
- * na migracao para Boot 4 (Jackson 3). Usa um ObjectMapper montado a mao: protege contra
+ * Caracteriza o formato de data devolvido pela API (Jackson do Boot 3.5, que mantem o formato do Boot 2.7,
+ * com spring.jackson.time-zone=America/Sao_Paulo), para detectar mudanca silenciosa
+ * na migracao para o Boot 4 (Jackson 3). Usa um ObjectMapper montado a mao: protege contra
  * mudanca no Jackson ou na entidade, mas NAO valida a propriedade
  * spring.jackson.time-zone do application.properties.
  */

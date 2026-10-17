@@ -32,8 +32,8 @@ import br.com.fateczs.seazs.service.UsuarioService;
  * Serializacao/desserializacao JSON de {@link UsuarioController} com o contexto web real
  * (Jackson do Boot, validacao, propriedades do application.properties) e o service mockado.
  *
- * Boot 3.4+ usa {@code @MockitoBean} (no lugar de {@code @MockBean});
- * Boot 4 move {@code @WebMvcTest} para {@code org.springframework.boot.webmvc.test.autoconfigure}.
+ * Observacao de migracao: a partir do Boot 3.4 usa-se {@code @MockitoBean} no lugar de {@code @MockBean}.
+ * No Boot 4, {@code @WebMvcTest} muda para o pacote {@code org.springframework.boot.webmvc.test.autoconfigure}.
  */
 @WebMvcTest(UsuarioController.class)
 public class UsuarioControllerWebMvcTest {

@@ -8,7 +8,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import br.com.fateczs.seazs.utils.ModalidadeCurso;
