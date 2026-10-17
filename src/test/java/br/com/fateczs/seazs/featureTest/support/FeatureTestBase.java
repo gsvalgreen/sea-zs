@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 import java.util.UUID;
 
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
@@ -27,7 +28,7 @@ import com.jayway.jsonpath.JsonPath;
 /**
  * Base dos featureTest: sobe a aplicacao inteira (controllers -> services -> JPA) contra um MySQL 5.7 real
  * em container, com os mesmos parametros do Dockerfile do projeto. Sem Docker os testes sao PULADOS
- * (Assume), nunca falham.
+ * (Assume) localmente, mas FALHAM quando a variavel de ambiente CI=true (GitHub Actions).
  *
  * Isolamento: o container e unico para toda a JVM de teste; cada teste cria seus proprios dados com sufixo
  * unico ({@link #unico(String)}) e nao depende de dados pre-existentes nem da ordem de execucao.
@@ -52,7 +53,12 @@ public abstract class FeatureTestBase {
 
 	@BeforeClass
 	public static void exigirDocker() {
-		Assume.assumeTrue("Docker indisponivel: featureTest pulado", DockerClientFactory.instance().isDockerAvailable());
+		boolean docker = DockerClientFactory.instance().isDockerAvailable();
+		if ("true".equalsIgnoreCase(System.getenv("CI"))) {
+			Assert.assertTrue("Docker indisponivel no CI: featureTest nao pode ser pulado", docker);
+		} else {
+			Assume.assumeTrue("Docker indisponivel: featureTest pulado", docker);
+		}
 		iniciarMySql();
 	}
 

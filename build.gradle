@@ -54,7 +54,7 @@ task integrationTest(type: Test) {
 
 task featureTest(type: Test) {
     group = 'verification'
-    description = 'Testes de fluxo completo com Testcontainers (exigem Docker; sem Docker sao pulados)'
+    description = 'Testes de fluxo completo com Testcontainers (exigem Docker; sem Docker sao pulados, exceto com CI=true)'
     testClassesDirs = sourceSets.test.output.classesDirs
     classpath = sourceSets.test.runtimeClasspath
     include '**/featureTest/**'
@@ -62,6 +62,11 @@ task featureTest(type: Test) {
 }
 
 check.dependsOn integrationTest, featureTest
+
+// Evita que um .exec antigo (de execucao anterior) entre na cobertura combinada.
+[test, integrationTest, featureTest].each { t ->
+    t.doFirst { delete t.extensions.getByType(JacocoTaskExtension).destinationFile }
+}
 
 jacoco {
     toolVersion = '0.8.5'

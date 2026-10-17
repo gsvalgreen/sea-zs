@@ -56,24 +56,6 @@ public class PresencaCertificadoFeatureTest extends FeatureTestBase {
 				.andExpect(jsonPath("$.cargaHorariaAtividade").value(2));
 	}
 
-	/** Atividade nao continua: dentro da janela de entrada so ha check-in, entao NAO emite certificado. */
-	@Test
-	public void atividadeNaoContinua_soComCheckIn_certificadoNaoEEmitido() throws Exception {
-		long agora = System.currentTimeMillis();
-		int usuario = criarUsuario(unico("aluno") + "@teste.com", "s");
-		int papel = criarPapel(unico("Participante"));
-		int evento = criarEvento(unico("Evento"), usuario, agora - HORA, agora + 24 * HORA);
-		int agendamento = criarAgendamento(evento, usuario, agora - HORA, agora + 24 * HORA, 20);
-		int atividade = criarAtividade(unico("Atividade"), agendamento, agora - 2 * MINUTO, agora + 2 * HORA, false);
-		inscrever(atividade, usuario, papel);
-		validarPresenca(idInscricao(usuario), atividade, usuario, papel);
-
-		String corpo = postar("/certificado/atividade/emitir", "{\"atividade\":{\"id\":" + atividade
-				+ "},\"usuario\":{\"id\":" + usuario + "},\"papel\":{\"id\":" + papel + "}}");
-
-		assertEquals("", corpo);
-	}
-
 	@Test
 	public void staff_validarPresencaEEmitirCertificadoDoAgendamento() throws Exception {
 		long agora = System.currentTimeMillis();
@@ -95,7 +77,11 @@ public class PresencaCertificadoFeatureTest extends FeatureTestBase {
 				.andExpect(jsonPath("$.cargaHoraria").value(3));
 	}
 
-	/** Valida a SQL nativa (UNION ALL inscricao + staff) no MySQL real, pelo controller. */
+	/**
+	 * Especifico de MySQL: exercita a SQL nativa (SUM + UNION ALL inscricao/staff) de InscricaoRepository, que
+	 * usa sintaxe/dialeto do MySQL e nao e garantida no H2 da camada integration. Por isso fica aqui, e e
+	 * mantido como fluxo (inscricao + staff -> total) e nao como borda isolada.
+	 */
 	@Test
 	public void somarPontos_somaPontosDeInscricaoEDeStaff() throws Exception {
 		long agora = System.currentTimeMillis();

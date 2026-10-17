@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Tests (Gradle tasks, one per pyramid layer, split by package under `src/test`):
   - `./gradlew test` runs only `unit` (fast, no Spring/DB/Docker) and is finalized by the JaCoCo report.
   - `./gradlew integrationTest` runs `integration` (H2, `@DataJpaTest`, `@WebMvcTest`); no Docker needed.
-  - `./gradlew featureTest` runs `featureTest` (full flows against a real MySQL 5.7 via Testcontainers). It **requires Docker**; without Docker these tests are skipped, not failed.
+  - `./gradlew featureTest` runs `featureTest` (full flows against a real MySQL 5.7 via Testcontainers). It **requires Docker**; without Docker these tests are skipped locally, but **fail when `CI=true`** (GitHub Actions) so CI never silently skips them.
   - `./gradlew check` / `build` runs all three plus `jacocoTestCoverageVerification`.
   - Single class: `./gradlew test --tests 'br.com.fateczs.seazs.unit.service.UsuarioServiceImplTest'` (use the task of the matching layer).
 - No lint tooling is configured.

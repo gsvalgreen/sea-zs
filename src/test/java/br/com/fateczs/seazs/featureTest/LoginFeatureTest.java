@@ -1,6 +1,5 @@
 package br.com.fateczs.seazs.featureTest;
 
-import static org.junit.Assert.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -10,12 +9,11 @@ import org.springframework.http.MediaType;
 
 import br.com.fateczs.seazs.featureTest.support.FeatureTestBase;
 
-/** Fluxo 1: cadastro de usuario e login (MySQL real). */
+/**
+ * Fluxo 1: cadastro de usuario e login (MySQL real). Senha errada e email inexistente ja sao cobertos na
+ * camada integration, por isso nao se repetem aqui.
+ */
 public class LoginFeatureTest extends FeatureTestBase {
-
-	private String login(String email, String senha) throws Exception {
-		return postar("/usuario/login", "{\"email\":\"" + email + "\",\"senha\":\"" + senha + "\"}");
-	}
 
 	@Test
 	public void cadastrarEFazerLogin_comCredenciaisCorretas_devolveOUsuario() throws Exception {
@@ -29,24 +27,12 @@ public class LoginFeatureTest extends FeatureTestBase {
 				.andExpect(jsonPath("$.email").value(email));
 	}
 
-	@Test
-	public void login_comSenhaErrada_respondeOkComCorpoVazio() throws Exception {
-		String email = unico("login") + "@teste.com";
-		criarUsuario(email, "Segredo123");
-
-		assertEquals("", login(email, "errada"));
-	}
-
-	@Test
-	public void login_comEmailInexistente_respondeOkComCorpoVazio() throws Exception {
-		assertEquals("", login(unico("fantasma") + "@teste.com", "qualquer"));
-	}
-
 	/**
-	 * Caracterizacao (divergencia H2 x MySQL): com a collation utf8mb4_unicode_ci a comparacao de senha na
-	 * query derivada e case-INsensitive, entao "SEGREDO123" autentica quem tem senha "Segredo123".
-	 * Suspeito: BCrypt (Fase 2) elimina isso. Este teste so tem sentido no MySQL real, nao no H2.
-	 * NAO EXECUTADO ate aqui (sem Docker): a expectativa vem da semantica da collation.
+	 * Caracterizacao (divergencia H2 x MySQL): EXPECTATIVA TEORICA, ainda nao confirmada por execucao. Pela
+	 * semantica da collation utf8mb4_unicode_ci (case-insensitive), a query derivada de login deveria aceitar
+	 * "SEGREDO123" para quem tem senha "Segredo123". A confirmar na primeira execucao com Docker; se o MySQL
+	 * se comportar diferente, ajustar ou remover este teste. BCrypt (Fase 2) elimina o comportamento.
+	 * So faz sentido no MySQL real, nao no H2.
 	 */
 	@Test
 	public void login_hoje_ignoraDiferencaDeCaixaNaSenha_collationDoMySql() throws Exception {
