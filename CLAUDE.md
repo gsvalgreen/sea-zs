@@ -4,17 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-`sea-zs` (Gradle project `seazs`) is a Spring Boot 2.1.6 / Java 8 web app (FATEC ZS, ADS Noite 2016/1) for managing academic events: events, activities (`Atividade`), schedules (`Agendamento`), enrollments (`Inscricao`), staff assignments, courses/subjects, users/roles, attendance certificates and a semester score report. Domain names are in Portuguese.
+`sea-zs` (Gradle project `seazs`) is a Spring Boot / Java web app (currently Boot 2.7.x on Java 17, being modernized per `docs/PLANO-MODERNIZACAO.md`; `build.gradle` and `.sdkmanrc` are the source of truth for versions) (FATEC ZS, ADS Noite 2016/1) for managing academic events: events, activities (`Atividade`), schedules (`Agendamento`), enrollments (`Inscricao`), staff assignments, courses/subjects, users/roles, attendance certificates and a semester score report. Domain names are in Portuguese.
 
 ## Commands
 
-- Java 8 is required (`.sdkmanrc` pins `java=8.0.502-tem`; run `sdk env`).
-- Database: MySQL 5.7 on `localhost:3306`, db `seazs`, user `root` / password `system` (see `src/main/resources/application.properties`). Start it with the repo `Dockerfile`:
-  `docker build -t seazs-mysql . && docker run -d -p 3306:3306 --name seazs-mysql seazs-mysql`
+- The JDK version is pinned in `.sdkmanrc` (currently Java 17; run `sdk env`) and in the Gradle toolchain in `build.gradle`.
+- Database: MySQL 8.4 on `localhost:3306`, db `seazs`, user `root` / password `system` (see `src/main/resources/application.properties`). Start it with the repo `Dockerfile`:
+  `docker build -t seazs-mysql . && docker run -d -p 3306:3306 --name seazs-mysql seazs-mysql`, or `docker compose up -d` (see `README.md`)
 - Tests (Gradle tasks, one per pyramid layer, split by package under `src/test`):
   - `./gradlew test` runs only `unit` (fast, no Spring/DB/Docker) and is finalized by the JaCoCo report.
   - `./gradlew integrationTest` runs `integration` (H2, `@DataJpaTest`, `@WebMvcTest`); no Docker needed.
-  - `./gradlew featureTest` runs `featureTest` (full flows against a real MySQL 5.7 via Testcontainers). It **requires Docker**; without Docker these tests are skipped locally, but **fail when `CI=true`** (GitHub Actions) so CI never silently skips them.
+  - `./gradlew featureTest` runs `featureTest` (full flows against a real MySQL 8.4 via Testcontainers). It **requires Docker**; without Docker these tests are skipped locally, but **fail when `CI=true`** (GitHub Actions) so CI never silently skips them.
   - Colima (macOS) + Testcontainers 1.21.4+: two environment variables are needed, otherwise `featureTest` is silently skipped (or fails with `CI=true`) because Docker is "not detected". (1) `export DOCKER_HOST=unix://$HOME/.colima/default/docker.sock`; (2) `export TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock` (Ryuk cannot mount the host socket path otherwise). No `~/.docker-java.properties` is needed with Testcontainers 1.21.4 (works with Docker Engine 29, min API 1.44). Do not disable TLS verification (`DOCKER_TLS_VERIFY`/`DOCKER_CERT_PATH`) to work around Docker detection problems. Ryuk stays enabled and removes the containers at the end. Tip: run with `CI=true` to see failures instead of skips.
   - `./gradlew check` / `build` runs all three plus `jacocoTestCoverageVerification`.
   - Single class: `./gradlew test --tests 'br.com.fateczs.seazs.unit.service.UsuarioServiceImplTest'` (use the task of the matching layer).
@@ -26,7 +26,7 @@ Tests follow the Test Pyramid (Martin Fowler): three layers, `unit`, `integratio
 
 - **unit** (base, the vast majority of tests): use Mockito and test classes in isolation. Cover business rules, edge cases and error paths here (e.g. `validouPresenca()` outcomes in `CertificadoServiceImpl`). Must be fast and need no Spring context, database or network.
 - **integration** (middle, fewer tests): verify that classes talking to external resources integrate correctly, quickly. Also verify framework behavior: Spring dependency injection and wiring, retries, async, observability/tracing, etc. Replace external resources (APIs, databases, Kafka) with stubs and doubles: WireMock, H2 or another in-memory database, embedded Kafka. Avoid Docker and containers in this layer.
-- **featureTest** (top, fewest tests): end-to-end tests that validate complete business use cases, entering through the controllers. Use Testcontainers for external resources (e.g. real MySQL 5.7 instead of H2); where that isn't possible, reuse the doubles from the integration layer. Cover the main flows, not every edge case.
+- **featureTest** (top, fewest tests): end-to-end tests that validate complete business use cases, entering through the controllers. Use Testcontainers for external resources (e.g. real MySQL 8.4 instead of H2); where that isn't possible, reuse the doubles from the integration layer. Cover the main flows, not every edge case.
 
 ## Revisão de código
 
@@ -49,7 +49,7 @@ Certificate flow: `CertificadoServiceImpl` loads the stored `Inscricao`/`StaffAg
 ## Database / config gotchas
 
 - Tables are generated by Hibernate (`ddl-auto=update`); `src/main/resources/schema.sql` is a reference schema that does `create schema seazs` and is intentionally not loaded.
-- The MySQL image runs with SSL disabled, because driver `mysql-connector-java 5.1.46` negotiates TLS 1.0/1.1, which recent JDKs reject.
-- `build.gradle` mixes the Boot 2.1.6 plugin with 2.0.3.RELEASE starter versions and uses legacy `compile`/`testCompile` configurations; keep that in mind when changing dependencies.
-- `application.properties` is not UTF-8 clean in the timezone comment; avoid re-saving it with another encoding.
+- The MySQL image uses the default MySQL 8.4 settings (SSL on, `caching_sha2_password`) with driver `com.mysql:mysql-connector-j`; collation is kept at `utf8mb4_unicode_ci` explicitly (string comparison, including login password, is case-insensitive).
+- `build.gradle` uses the Boot plugin BOM (no pinned starter versions) and the modern `implementation`/`runtimeOnly`/`developmentOnly`/`testImplementation` configurations; do not pin versions that the BOM manages.
+- `application.properties` is plain ASCII (the old timezone comment was rewritten); keep it ASCII so it is safe under any encoding. Existing `.java` files use CRLF line endings: preserve them when editing.
 - Thymeleaf template/assets live in `src/main/resources/templates/` (`main.html`, `assets/`).

@@ -25,10 +25,10 @@ Ao criar uma nova funcionalidade, respeite essas camadas: nada de regra de negó
 
 ## Restrições do ambiente
 
-- Java 8 (`.sdkmanrc`; rode `sdk env`). Não use recursos de versões superiores.
-- MySQL 5.7 em `localhost:3306`, banco `seazs`. Hibernate gera as tabelas (`ddl-auto=update`); `schema.sql` é só referência e não é carregado.
-- `build.gradle` mistura o plugin Boot 2.1.6 com starters 2.0.3.RELEASE e usa as configurações legadas `compile`/`testCompile`. Ao mexer em dependências, mantenha esse padrão e avise sobre incompatibilidades.
-- Não salve `application.properties` com outra codificação: o comentário de timezone não é UTF-8 limpo.
+- A versão do JDK está no `.sdkmanrc` e no toolchain do `build.gradle` (hoje Java 17; rode `sdk env`). Use apenas recursos da versão vigente; a migração de versões segue `docs/PLANO-MODERNIZACAO.md`.
+- MySQL 8.4 em `localhost:3306`, banco `seazs`. Hibernate gera as tabelas (`ddl-auto=update`); `schema.sql` é só referência e não é carregado.
+- `build.gradle` usa o BOM do plugin Boot (sem versões fixas nos starters) e as configurações `implementation`/`runtimeOnly`/`developmentOnly`/`testImplementation`. Ao mexer em dependências, não fixe versões que o BOM gerencia e avise sobre incompatibilidades.
+- Mantenha `application.properties` em ASCII, e preserve CRLF nos `.java` existentes ao editá-los.
 
 ## Testes (Pirâmide de Testes)
 
@@ -36,7 +36,7 @@ Cubra cada cenário na camada mais baixa que consegue verificá-lo, sem repetir 
 
 - **unit** (maioria): Mockito, classes isoladas, sem Spring, banco ou rede. Regras de negócio, casos de borda e caminhos de erro (ex.: resultados de `validouPresenca()` em `CertificadoServiceImpl`).
 - **integration** (poucos): integração com recursos externos e comportamento do framework (injeção, wiring, etc.), com stubs e doubles (H2, WireMock). Evite Docker.
-- **featureTest** (pouquíssimos): fluxos completos pelos controllers, com Testcontainers (MySQL 5.7 real) quando possível.
+- **featureTest** (pouquíssimos): fluxos completos pelos controllers, com Testcontainers (MySQL 8.4 real) quando possível.
 
 Se um teste de camada superior pegar um bug que nenhum teste inferior pegou, adicione também um teste na camada inferior. Todo código novo ou alterado deve vir com testes. Rode apenas o necessário, por exemplo `./gradlew test --tests '<classe>'`. Lembre que `SeazsApplicationTests` (`contextLoads`) exige o MySQL ligado.
 
