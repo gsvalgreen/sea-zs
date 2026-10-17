@@ -4,10 +4,7 @@ name: seazs
 
 services:
   mysql:
-    image: mysql:${MYSQL_VERSION:-5.7}
-    # A imagem 5.7 nao tem build arm64 (Apple Silicon). Para mysql:8.x, defina
-    # MYSQL_PLATFORM=linux/arm64 (ou o que o seu host suportar).
-    platform: ${MYSQL_PLATFORM:-linux/amd64}
+    image: mysql:${MYSQL_VERSION:-8.4}
     container_name: seazs-mysql
     restart: unless-stopped
     environment:
@@ -17,14 +14,10 @@ services:
     ports:
       # Somente loopback: o banco nao fica exposto na rede local.
       - "127.0.0.1:${MYSQL_PORT:-3306}:3306"
-    # --ssl=0: o driver mysql-connector-java 5.1.46 negocia TLS 1.0/1.1, rejeitado
-    # por JDKs recentes. Em MySQL 8.4 esse flag nao existe: defina MYSQL_EXTRA_ARGS
-    # com outro valor (ver .env.example) ao migrar.
     command: >-
       --character-set-server=utf8mb4
       --collation-server=utf8mb4_unicode_ci
       --default-time-zone=-03:00
-      ${MYSQL_EXTRA_ARGS:---ssl=0}
     volumes:
       - seazs-mysql-data:/var/lib/mysql
     healthcheck:

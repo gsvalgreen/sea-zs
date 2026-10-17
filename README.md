@@ -12,17 +12,17 @@
 
 ## Ambiente local
 
-Requisitos: Java 8 (`sdk env`) e Docker.
+Requisitos: Java 17 (`sdk env`) e Docker.
 
 ```bash
 cp .env.example .env          # ajuste se necessário; .env não é versionado
-docker compose up -d          # sobe o MySQL (5.7) com healthcheck e volume nomeado
+docker compose up -d          # sobe o MySQL (8.4) com healthcheck e volume nomeado
 docker compose ps             # STATUS deve ficar "healthy"
 ./gradlew bootRun             # a aplicação usa localhost:3306, db seazs, root/system
 docker compose down           # para (use -v para apagar o volume de dados)
 ```
 
-O MySQL fica exposto apenas em `127.0.0.1`. Para migrar para o MySQL 8.4 (plano de modernização), mude `MYSQL_VERSION`, `MYSQL_PLATFORM` e `MYSQL_EXTRA_ARGS` no `.env`.
+O MySQL fica exposto apenas em `127.0.0.1`. A versão da imagem é controlada por `MYSQL_VERSION` no `.env`.
 
 ## Testes e cobertura
 
@@ -34,7 +34,7 @@ O relatório fica em `build/reports/jacoco/test/`. O build falha se a cobertura 
 
 ## CI (GitHub Actions)
 
-`.github/workflows/ci.yml` roda build, testes (com MySQL 5.7 como service), verificação de cobertura JaCoCo e análise SonarCloud em push e pull request. Configure em *Settings > Secrets and variables > Actions*:
+`.github/workflows/ci.yml` roda build, testes (com MySQL 8.4 como service), verificação de cobertura JaCoCo e análise SonarCloud em push e pull request. Configure em *Settings > Secrets and variables > Actions*:
 
 | Nome | Tipo | Uso |
 | --- | --- | --- |
