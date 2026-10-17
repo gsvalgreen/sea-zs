@@ -15,7 +15,8 @@ import br.com.fateczs.seazs.featureTest.support.FeatureTestBase;
 /**
  * Fluxo 3: inscricao -> presenca -> certificado (atividade e staff), com somatorio de pontos.
  *
- * Sem Clock injetavel, as janelas sao relativas a "agora" (margem de minutos). Regras de borda da janela
+ * Os featureTest usam o relogio real (o bean Clock nao e substituido): janelas relativas a "agora" com
+ * margem de minutos. Regras de borda da janela
  * de presenca ficam nos testes unitarios de InscricaoServiceImpl.
  */
 public class PresencaCertificadoFeatureTest extends FeatureTestBase {

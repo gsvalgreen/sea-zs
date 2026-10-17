@@ -33,8 +33,8 @@ import com.jayway.jsonpath.JsonPath;
  * Isolamento: o container e unico para toda a JVM de teste; cada teste cria seus proprios dados com sufixo
  * unico ({@link #unico(String)}) e nao depende de dados pre-existentes nem da ordem de execucao.
  *
- * Relogio: o sistema ainda usa o relogio real (ver Fase 1 do plano, injecao de Clock). Por isso as janelas
- * de presenca sao montadas relativas a "agora" com margem de minutos; trocar por Clock fixo apos o refactor.
+ * Relogio: ha um bean Clock, mas os featureTest optam por manter o relogio real. As janelas de presenca
+ * sao montadas relativas a "agora" com margem de minutos; bordas exatas ficam nos testes unitarios (Clock fixo).
  *
  * Migracao: JUnit 5 = {@code @ExtendWith(SpringExtension.class)} via {@code @SpringBootTest} (remover @RunWith)
  * e {@code @Testcontainers(disabledWithoutDocker = true)}; Boot 3.1+ = {@code @ServiceConnection} no lugar do
