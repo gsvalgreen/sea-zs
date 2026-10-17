@@ -90,6 +90,7 @@ Resultado esperado: stack em Java 25 + Boot 4.x (via 3.5.x), autenticação com 
 ### Fase 0, preparação
 - Criar branch. Decidir o destino das alterações pendentes do wrapper.
 - Confirmar a linha de base em Java 8 e MySQL via Docker. Escrever testes de caracterização mínimos (ver Testing do CLAUDE.md: unit/integration/featureTest), em especial para presença (`InscricaoServiceImpl.validaPresenca`) e certificados.
+- Débito de testabilidade do baseline: `InscricaoServiceImpl.somaTotalDePontosNoSemestre` (e `DataUtils.getDataAtual`) dependem do relógio do sistema, então o teste unitário só exercita o semestre vigente a cada execução e deixa o outro sem cobertura. Injetar um `java.time.Clock` (bean) nesses pontos durante a Fase 1, para testar os dois semestres de forma determinística.
 - Hotfix: `@JsonProperty(access = WRITE_ONLY)` em `Usuario.senha`; externalizar e rotacionar o segredo do banco (`${DB_URL}`, `${DB_USER}`, `${DB_PASSWORD}`).
 
 ### Fase 1, stack incremental

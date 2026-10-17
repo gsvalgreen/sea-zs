@@ -4,6 +4,7 @@ plugins {
 apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'io.spring.dependency-management'
+apply plugin: 'jacoco'
 
 group = 'br.com.fateczs'
 version = '0.0.1-SNAPSHOT'
@@ -29,4 +30,16 @@ dependencies {
     runtime group: 'org.springframework.boot', name: 'spring-boot-devtools', version:'2.0.3.RELEASE'
     runtime group: 'mysql', name: 'mysql-connector-java', version:'5.1.46'
     testCompile group: 'org.springframework.boot', name: 'spring-boot-starter-test', version:'2.0.3.RELEASE'
+}
+
+jacoco {
+    toolVersion = '0.8.5'
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
+        html.enabled true
+        csv.enabled false
+    }
 }

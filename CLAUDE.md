@@ -22,6 +22,10 @@ Tests follow the Test Pyramid (Martin Fowler): three layers, `unit`, `integratio
 - **integration** (middle, fewer tests): verify that classes talking to external resources integrate correctly, quickly. Also verify framework behavior: Spring dependency injection and wiring, retries, async, observability/tracing, etc. Replace external resources (APIs, databases, Kafka) with stubs and doubles: WireMock, H2 or another in-memory database, embedded Kafka. Avoid Docker and containers in this layer.
 - **featureTest** (top, fewest tests): end-to-end tests that validate complete business use cases, entering through the controllers. Use Testcontainers for external resources (e.g. real MySQL 5.7 instead of H2); where that isn't possible, reuse the doubles from the integration layer. Cover the main flows, not every edge case.
 
+## Revisão de código
+
+Todo código criado por agentes deve ser revisado pelo subagent `revisor-codigo` (somente leitura) antes de qualquer PR. Quem orquestra aciona o revisor quando um subagent disser que vai abrir ou propor um PR; o PR só é criado após o veredito `APROVADO` (ou `APROVADO COM RESSALVAS`). Em caso de `REPROVADO`, os achados voltam ao agente autor e a revisão é repetida.
+
 ## Architecture
 
 Layered Spring MVC under `br.com.fateczs.seazs`:
