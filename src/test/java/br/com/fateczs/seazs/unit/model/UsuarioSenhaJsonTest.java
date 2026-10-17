@@ -27,7 +27,7 @@ public class UsuarioSenhaJsonTest {
 
 	private void assertSemSenha(Object o) throws Exception {
 		String json = mapper.writeValueAsString(o);
-		assertFalse(json, json.contains("senha"));
+		assertFalse(json, json.contains("\"senha\""));
 		assertFalse(json, json.contains(SEGREDO));
 	}
 

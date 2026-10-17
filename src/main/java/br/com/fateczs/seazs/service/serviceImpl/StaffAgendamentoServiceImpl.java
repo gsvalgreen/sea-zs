@@ -3,6 +3,8 @@ package br.com.fateczs.seazs.service.serviceImpl;
 import java.util.Date;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,8 @@ import br.com.fateczs.seazs.utils.DataUtils;
 
 @Service
 public class StaffAgendamentoServiceImpl implements StaffAgendamentoService {
+
+	private static final Logger log = LoggerFactory.getLogger(StaffAgendamentoServiceImpl.class);
 	
 	private Sort sortByDtInscricaoAsc() {
 		return new Sort(Sort.Direction.ASC, "dtInscricao");
@@ -60,7 +64,6 @@ public class StaffAgendamentoServiceImpl implements StaffAgendamentoService {
 		return repository.findAll(sortByDtInscricaoAsc());
 	}
 
-	@SuppressWarnings("deprecation")
 	@Override
 	public StaffAgendamento validarPresencaStaff(StaffAgendamento staff) {
 		staff = repository.findByAgendamentoIdAndUsuarioId(staff.getAgendamento().getId(), staff.getUsuario().getId());
@@ -69,12 +72,9 @@ public class StaffAgendamentoServiceImpl implements StaffAgendamentoService {
 		Date inicioEntrada = operaData.somaMinutos(staff.getAgendamento().getInicio(), -10);
 		Date fimSaida = operaData.somaMinutos(staff.getAgendamento().getFim(), 30);
 		
-		System.out.println("agora: " + agora.toLocaleString());
-		System.out.println("inicioEntrada: " + inicioEntrada.toLocaleString());
-		System.out.println("fimSaida: " + fimSaida.toLocaleString());
 		
 		if(agora.before(fimSaida) && agora.after(inicioEntrada)) {
-			System.out.println("Dentro do horário de checagem");
+			log.debug("Dentro do horário de checagem");
 			staff.setCheckIn(true);
 			staff.setCheckOut(true);
 			staff.setPontuacaoRecebida(staff.getAgendamento().getPontuacaoStaff());
