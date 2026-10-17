@@ -1,5 +1,6 @@
 package br.com.fateczs.seazs.integration.repository;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static br.com.fateczs.seazs.integration.support.DadosTeste.FUTURO;
 import static br.com.fateczs.seazs.integration.support.DadosTeste.PASSADO;
 import static br.com.fateczs.seazs.integration.support.DadosTeste.agendamento;
@@ -10,8 +11,8 @@ import static br.com.fateczs.seazs.integration.support.DadosTeste.inscricao;
 import static br.com.fateczs.seazs.integration.support.DadosTeste.papel;
 import static br.com.fateczs.seazs.integration.support.DadosTeste.staff;
 import static br.com.fateczs.seazs.integration.support.DadosTeste.usuario;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.Arrays;
 import java.util.Calendar;
@@ -19,8 +20,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -52,7 +53,7 @@ public class InscricaoRepositoryIntegrationTest extends RepositorioIntegracaoBas
 	private Papel participante;
 	private Agendamento agendamento;
 
-	@Before
+	@BeforeEach
 	public void prepararCenarioBase() {
 		ana = em.persist(usuario("ana@teste.com"));
 		bia = em.persist(usuario("bia@teste.com"));
@@ -239,11 +240,12 @@ public class InscricaoRepositoryIntegrationTest extends RepositorioIntegracaoBas
 		assertEquals(2, repository.findByUsuarioId(ana.getId()).size());
 	}
 
-	@Test(expected = DataIntegrityViolationException.class)
+	@Test
 	public void saveAndFlush_rejeitaSegundaInscricaoDoMesmoUsuarioNaMesmaAtividade() {
 		Atividade atividade = novaAtividade("unica", PASSADO, FUTURO);
 		repository.saveAndFlush(inscricao(atividade, ana, participante, PASSADO, false, false, 0));
 
-		repository.saveAndFlush(inscricao(atividade, ana, participante, PASSADO, false, false, 0));
+		assertThrows(DataIntegrityViolationException.class,
+				() -> repository.saveAndFlush(inscricao(atividade, ana, participante, PASSADO, false, false, 0)));
 	}
 }

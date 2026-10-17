@@ -1,19 +1,19 @@
 package br.com.fateczs.seazs.unit.service;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.when;
 
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import br.com.fateczs.seazs.model.Agendamento;
 import br.com.fateczs.seazs.model.Atividade;
@@ -28,7 +28,7 @@ import br.com.fateczs.seazs.repository.InscricaoRepository;
 import br.com.fateczs.seazs.repository.StaffAgendamentoRepository;
 import br.com.fateczs.seazs.service.serviceImpl.CertificadoServiceImpl;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class CertificadoServiceImplTest {
 
 	@Mock

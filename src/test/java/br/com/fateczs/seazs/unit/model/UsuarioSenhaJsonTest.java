@@ -1,9 +1,9 @@
 package br.com.fateczs.seazs.unit.model;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -27,8 +27,8 @@ public class UsuarioSenhaJsonTest {
 
 	private void assertSemSenha(Object o) throws Exception {
 		String json = mapper.writeValueAsString(o);
-		assertFalse(json, json.contains("\"senha\""));
-		assertFalse(json, json.contains(SEGREDO));
+		assertFalse(json.contains("\"senha\""), json);
+		assertFalse(json.contains(SEGREDO), json);
 	}
 
 	@Test

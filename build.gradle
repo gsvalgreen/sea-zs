@@ -42,8 +42,6 @@ dependencies {
     // featureTest: MySQL 8 real via Docker (extensao JUnit 5 do Testcontainers)
     testImplementation 'org.testcontainers:mysql:1.21.4'
     testImplementation 'org.testcontainers:junit-jupiter:1.21.4'
-    // TEMPORARIO (removido no commit de migracao para JUnit 5): roda os testes JUnit 4 ainda nao migrados.
-    testRuntimeOnly 'org.junit.vintage:junit-vintage-engine'
 }
 
 // Camadas da piramide de testes, separadas por pacote em src/test (unit, integration, featureTest).

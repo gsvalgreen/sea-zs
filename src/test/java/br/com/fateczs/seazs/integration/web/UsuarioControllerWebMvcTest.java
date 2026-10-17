@@ -1,7 +1,7 @@
 package br.com.fateczs.seazs.integration.web;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -15,14 +15,12 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.TimeZone;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import br.com.fateczs.seazs.controller.UsuarioController;
@@ -34,11 +32,10 @@ import br.com.fateczs.seazs.service.UsuarioService;
  * Serializacao/desserializacao JSON de {@link UsuarioController} com o contexto web real
  * (Jackson do Boot, validacao, propriedades do application.properties) e o service mockado.
  *
- * Migracao: Boot 3 = {@code javax.validation} -> {@code jakarta.validation} (nada aqui usa); com JUnit 5
- * remover {@code @RunWith}; Boot 3.4+/4 troca {@code @MockBean} por {@code @MockitoBean};
+ * Migracao: Boot 3 = {@code javax.validation} -> {@code jakarta.validation} (nada aqui usa);
+ * Boot 3.4+/4 troca {@code @MockBean} por {@code @MockitoBean};
  * Boot 4 move {@code @WebMvcTest} para {@code org.springframework.boot.webmvc.test.autoconfigure}.
  */
-@RunWith(SpringRunner.class)
 @WebMvcTest(UsuarioController.class)
 public class UsuarioControllerWebMvcTest {
 

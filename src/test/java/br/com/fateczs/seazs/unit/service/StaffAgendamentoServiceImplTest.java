@@ -1,9 +1,9 @@
 package br.com.fateczs.seazs.unit.service;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -18,12 +18,12 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -33,7 +33,7 @@ import br.com.fateczs.seazs.model.Usuario;
 import br.com.fateczs.seazs.repository.StaffAgendamentoRepository;
 import br.com.fateczs.seazs.service.serviceImpl.StaffAgendamentoServiceImpl;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class StaffAgendamentoServiceImplTest {
 
 	private static final long MINUTO = 60 * 1000L;
@@ -46,7 +46,7 @@ public class StaffAgendamentoServiceImplTest {
 
 	private static final Instant AGORA = Instant.parse("2019-03-15T15:00:00Z");
 
-	@Before
+	@BeforeEach
 	public void fixaRelogio() {
 		ReflectionTestUtils.setField(service, "clock", Clock.fixed(AGORA, ZoneId.of("America/Sao_Paulo")));
 	}

@@ -1,6 +1,6 @@
 package br.com.fateczs.seazs.featureTest;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import br.com.fateczs.seazs.featureTest.support.FeatureTestBase;
 

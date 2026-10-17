@@ -4,16 +4,16 @@ import static br.com.fateczs.seazs.integration.support.DadosTeste.curso;
 import static br.com.fateczs.seazs.integration.support.DadosTeste.data;
 import static br.com.fateczs.seazs.integration.support.DadosTeste.disciplina;
 import static br.com.fateczs.seazs.integration.support.DadosTeste.usuario;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Calendar;
 import java.util.Date;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
@@ -39,7 +39,7 @@ public class UsuarioDisciplinaRepositoryIntegrationTest extends RepositorioInteg
 	private Disciplina java;
 	private Disciplina banco;
 
-	@Before
+	@BeforeEach
 	public void prepararCenarioBase() {
 		ana = em.persist(usuario("ana@teste.com"));
 		bia = em.persist(usuario("bia@teste.com"));

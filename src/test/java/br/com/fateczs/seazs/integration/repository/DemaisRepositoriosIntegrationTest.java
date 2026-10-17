@@ -1,5 +1,6 @@
 package br.com.fateczs.seazs.integration.repository;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static br.com.fateczs.seazs.integration.support.DadosTeste.FUTURO;
 import static br.com.fateczs.seazs.integration.support.DadosTeste.PASSADO;
 import static br.com.fateczs.seazs.integration.support.DadosTeste.agendamento;
@@ -7,15 +8,15 @@ import static br.com.fateczs.seazs.integration.support.DadosTeste.data;
 import static br.com.fateczs.seazs.integration.support.DadosTeste.evento;
 import static br.com.fateczs.seazs.integration.support.DadosTeste.staff;
 import static br.com.fateczs.seazs.integration.support.DadosTeste.usuario;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -49,7 +50,7 @@ public class DemaisRepositoriosIntegrationTest extends RepositorioIntegracaoBase
 
 	private Usuario ana;
 
-	@Before
+	@BeforeEach
 	public void prepararCenarioBase() {
 		ana = em.persist(usuario("ana@teste.com"));
 	}
@@ -84,9 +85,9 @@ public class DemaisRepositoriosIntegrationTest extends RepositorioIntegracaoBase
 		assertEquals(2, usuarioRepository.findByNome(ana.getNome()).size());
 	}
 
-	@Test(expected = DataIntegrityViolationException.class)
+	@Test
 	public void saveAndFlush_rejeitaEmailDuplicado() {
-		usuarioRepository.saveAndFlush(usuario("ana@teste.com"));
+		assertThrows(DataIntegrityViolationException.class, () -> usuarioRepository.saveAndFlush(usuario("ana@teste.com")));
 	}
 
 	// ---- EventoRepository

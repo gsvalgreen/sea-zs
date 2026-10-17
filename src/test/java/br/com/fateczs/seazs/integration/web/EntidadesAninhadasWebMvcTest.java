@@ -9,14 +9,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Collections;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 
 import br.com.fateczs.seazs.controller.AgendamentoController;
@@ -41,7 +39,6 @@ import br.com.fateczs.seazs.service.InscricaoService;
  * Os testes "..._naoExpoeASenha..." garantem o contrato do hotfix de seguranca
  * (@JsonProperty(access = WRITE_ONLY) em Usuario.senha): a senha nunca aparece nas respostas.
  */
-@RunWith(SpringRunner.class)
 @WebMvcTest({ EventoController.class, AgendamentoController.class, InscricaoController.class,
 		CertificadoController.class })
 public class EntidadesAninhadasWebMvcTest {
@@ -62,7 +59,7 @@ public class EntidadesAninhadasWebMvcTest {
 	private Agendamento agendamento;
 	private Atividade atividade;
 
-	@Before
+	@BeforeEach
 	public void montarGrafo() {
 		ana = DadosTeste.usuario("ana@teste.com");
 		ana.setId(1);

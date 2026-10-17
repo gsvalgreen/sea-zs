@@ -1,6 +1,6 @@
 package br.com.fateczs.seazs.unit.model;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -58,7 +58,7 @@ final class BeanTestSupport {
 			}
 			Object valor = amostra(set.getParameterTypes()[0]);
 			set.invoke(bean, valor);
-			assertEquals(classe.getSimpleName() + "." + set.getName(), valor, get.invoke(bean));
+			assertEquals(valor, get.invoke(bean), classe.getSimpleName() + "." + set.getName());
 			verificados++;
 		}
 		return verificados;

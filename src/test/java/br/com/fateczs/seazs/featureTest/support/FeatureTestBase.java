@@ -6,10 +6,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.util.List;
 import java.util.UUID;
 
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -18,7 +17,6 @@ import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.MySQLContainer;
@@ -26,9 +24,9 @@ import org.testcontainers.containers.MySQLContainer;
 import com.jayway.jsonpath.JsonPath;
 
 /**
- * Base dos featureTest: sobe a aplicacao inteira (controllers -> services -> JPA) contra um MySQL 5.7 real
+ * Base dos featureTest: sobe a aplicacao inteira (controllers -> services -> JPA) contra um MySQL 8.4 real
  * em container, com os mesmos parametros do Dockerfile do projeto. Sem Docker os testes sao PULADOS
- * (Assume) localmente, mas FALHAM quando a variavel de ambiente CI=true (GitHub Actions).
+ * (Assumptions) localmente, mas FALHAM quando a variavel de ambiente CI=true (GitHub Actions).
  *
  * Isolamento: o container e unico para toda a JVM de teste; cada teste cria seus proprios dados com sufixo
  * unico ({@link #unico(String)}) e nao depende de dados pre-existentes nem da ordem de execucao.
@@ -36,11 +34,8 @@ import com.jayway.jsonpath.JsonPath;
  * Relogio: ha um bean Clock, mas os featureTest optam por manter o relogio real. As janelas de presenca
  * sao montadas relativas a "agora" com margem de minutos; bordas exatas ficam nos testes unitarios (Clock fixo).
  *
- * Migracao: JUnit 5 = {@code @ExtendWith(SpringExtension.class)} via {@code @SpringBootTest} (remover @RunWith)
- * e {@code @Testcontainers(disabledWithoutDocker = true)}; Boot 3.1+ = {@code @ServiceConnection} no lugar do
- * inicializador abaixo; Boot 3 = driver {@code com.mysql.cj.jdbc.Driver}/{@code mysql:8.4}.
+ * Migracao futura: Boot 3.1+ = {@code @ServiceConnection} no lugar do inicializador abaixo.
  */
-@RunWith(SpringRunner.class)
 @SpringBootTest
 @AutoConfigureMockMvc
 @ContextConfiguration(initializers = FeatureTestBase.MySqlInitializer.class)
@@ -55,25 +50,24 @@ public abstract class FeatureTestBase {
 	@Autowired
 	protected MockMvc mvc;
 
-	@BeforeClass
+	@BeforeAll
 	public static void exigirDocker() {
 		boolean docker = DockerClientFactory.instance().isDockerAvailable();
 		if ("true".equalsIgnoreCase(System.getenv("CI"))) {
-			Assert.assertTrue("Docker indisponivel no CI: featureTest nao pode ser pulado", docker);
+			Assertions.assertTrue(docker, "Docker indisponivel no CI: featureTest nao pode ser pulado");
 		} else {
-			Assume.assumeTrue("Docker indisponivel: featureTest pulado", docker);
+			Assumptions.assumeTrue(docker, "Docker indisponivel: featureTest pulado");
 		}
 		iniciarMySql();
 	}
 
 	private static synchronized void iniciarMySql() {
 		if (mysql == null) {
-			mysql = new MySQLContainer<>("mysql:5.7")
+			mysql = new MySQLContainer<>("mysql:8.4")
 					.withDatabaseName("seazs")
 					.withUsername("root")
 					.withPassword("system")
-					.withUrlParam("useSSL", "false")
-					.withCommand("--ssl=0", "--character-set-server=utf8mb4",
+					.withCommand("--character-set-server=utf8mb4",
 							"--collation-server=utf8mb4_unicode_ci", "--default-time-zone=-03:00");
 			mysql.start();
 		}

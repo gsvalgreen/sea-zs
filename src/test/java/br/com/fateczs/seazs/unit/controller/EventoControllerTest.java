@@ -1,6 +1,6 @@
 package br.com.fateczs.seazs.unit.controller;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -11,16 +11,16 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import br.com.fateczs.seazs.controller.EventoController;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class EventoControllerTest {
 
 	@Mock
@@ -31,7 +31,7 @@ public class EventoControllerTest {
 
 	private static final Instant AGORA = Instant.parse("2019-03-15T15:00:00Z");
 
-	@Before
+	@BeforeEach
 	public void fixaRelogio() {
 		ReflectionTestUtils.setField(controller, "clock", Clock.fixed(AGORA, ZoneId.of("America/Sao_Paulo")));
 	}
