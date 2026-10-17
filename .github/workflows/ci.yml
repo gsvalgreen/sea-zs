@@ -39,13 +39,13 @@ jobs:
           # Sonar precisa do historico completo para blame/novo codigo.
           fetch-depth: 0
 
-      # Java 8 (igual ao .sdkmanrc; Gradle 4.5 nao roda em JDK mais novo).
+      # Java 8 (igual ao .sdkmanrc; Gradle 6.9 nao roda em JDK 17+).
       # Ao migrar para Java 17/25, ajustar java-version manualmente.
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '8'
-          # gradle/actions/setup-gradle nao suporta Gradle 4.5; cache via setup-java.
+          # cache via setup-java (o wrapper baixa o Gradle 6.9.4).
           cache: gradle
 
       - name: Build, testes e cobertura (JaCoCo)

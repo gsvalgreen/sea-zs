@@ -2,7 +2,6 @@ plugins {
     id 'org.springframework.boot' version '2.1.6.RELEASE'
 }
 apply plugin: 'java'
-apply plugin: 'maven'
 apply plugin: 'io.spring.dependency-management'
 apply plugin: 'jacoco'
 
@@ -22,18 +21,21 @@ repositories {
     maven { url "https://repo.maven.apache.org/maven2" }
 }
 dependencies {
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa', version:'2.0.3.RELEASE'
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-thymeleaf', version:'2.0.3.RELEASE'
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-web', version:'2.0.3.RELEASE'
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-actuator', version:'2.0.3.RELEASE'
-    compile group: 'org.codehaus.groovy', name: 'groovy', version:'2.4.13'
-    runtime group: 'org.springframework.boot', name: 'spring-boot-devtools', version:'2.0.3.RELEASE'
-    runtime group: 'mysql', name: 'mysql-connector-java', version:'5.1.46'
-    testCompile group: 'org.springframework.boot', name: 'spring-boot-starter-test', version:'2.0.3.RELEASE'
+    // Versoes gerenciadas pelo BOM do Boot (2.1.6). Em 2.1.x a Bean Validation ja vem no
+    // starter-web (spring-boot-starter-validation so existe a partir do Boot 2.3).
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    // developmentOnly so existe a partir do plugin Boot 2.3; ate la devtools fica em runtimeOnly (como antes).
+    runtimeOnly 'org.springframework.boot:spring-boot-devtools'
+    // Driver mantido em 5.1.46 (o BOM traria 8.0.16); a troca para mysql-connector-j e etapa posterior.
+    runtimeOnly 'mysql:mysql-connector-java:5.1.46'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
     // integration: banco em memoria (versao gerenciada pelo BOM do Boot)
-    testRuntime group: 'com.h2database', name: 'h2'
+    testRuntimeOnly 'com.h2database:h2'
     // featureTest: MySQL real via Docker (1.x, compativel com Java 8 e JUnit 4)
-    testCompile group: 'org.testcontainers', name: 'mysql', version: '1.21.4'
+    testImplementation 'org.testcontainers:mysql:1.21.4'
 }
 
 // Camadas da piramide de testes, separadas por pacote em src/test (unit, integration, featureTest).
@@ -83,9 +85,9 @@ jacocoTestReport {
 // ---------------------------------------------------------------------------
 // Qualidade/CI (mantido isolado; usado por .github/workflows/ci.yml)
 // ---------------------------------------------------------------------------
-// Compativel com Gradle 4.5. Ao migrar o Gradle/Boot/Java, revisar:
-//  - Sonar NAO usa o plugin Gradle: o scanner atual exige JVM 17 e o Gradle 4.5
-//    roda so em JDK <= 8 (testado: plugin 2.7.1 falha com "class file version 61").
+// Compativel com Gradle 6.9 (Java 8). Ao migrar o Gradle/Boot/Java, revisar:
+//  - Sonar NAO usa o plugin Gradle: o scanner atual exige JVM 17 e o Gradle 6.9
+//    roda so em JDK <= 16 (testado com Gradle 4.5: plugin 2.7.1 falha com "class file version 61").
 //    O CI usa SonarSource/sonarqube-scan-action + sonar-project.properties.
 //    Apos migrar para Gradle 7+/JDK 17 da para trocar por `id 'org.sonarqube'`
 //    e remover sonar-project.properties e o passo do scan-action;
@@ -113,7 +115,7 @@ jacocoTestCoverageVerification {
     }
 }
 test.finalizedBy jacocoTestReport
-// Gradle 4.5 nao liga jacocoTestCoverageVerification ao `check` automaticamente.
+// Explicito para garantir o gate no `check` (e ordenado depois das tres camadas abaixo).
 check.dependsOn jacocoTestCoverageVerification
 jacocoTestCoverageVerification.mustRunAfter jacocoTestReport
 
@@ -125,7 +127,7 @@ def execucoesJacoco = files({
     [test, integrationTest, featureTest].collect { it.extensions.getByType(JacocoTaskExtension).destinationFile }
             .findAll { it.exists() }
 })
-jacocoTestReport.executionData = execucoesJacoco
-jacocoTestCoverageVerification.executionData = execucoesJacoco
+jacocoTestReport.executionData.setFrom(execucoesJacoco)
+jacocoTestCoverageVerification.executionData.setFrom(execucoesJacoco)
 [jacocoTestReport, jacocoTestCoverageVerification].each { it.mustRunAfter integrationTest, featureTest }
 check.dependsOn jacocoTestReport
