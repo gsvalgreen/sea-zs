@@ -26,6 +26,8 @@ Tests follow the Test Pyramid (Martin Fowler): three layers, `unit`, `integratio
 
 Todo código criado por agentes deve ser revisado pelo subagent `revisor-codigo` (somente leitura) antes de qualquer PR. Quem orquestra aciona o revisor quando um subagent disser que vai abrir ou propor um PR; o PR só é criado após o veredito `APROVADO` (ou `APROVADO COM RESSALVAS`). Em caso de `REPROVADO`, os achados voltam ao agente autor e a revisão é repetida.
 
+Depois do `revisor-codigo` e sempre antes de abrir o PR, quem orquestra aciona o subagent `seguranca-codigo-limpo`, que corrige riscos de segurança e code smells. Fluxo: autor → `revisor-codigo` → `seguranca-codigo-limpo` → PR. Se o `seguranca-codigo-limpo` alterar código, o `revisor-codigo` revê essas alterações antes do PR.
+
 ## Architecture
 
 Layered Spring MVC under `br.com.fateczs.seazs`:
