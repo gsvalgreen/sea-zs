@@ -15,6 +15,7 @@ import javax.persistence.TemporalType;
 import javax.validation.constraints.NotNull;
 import org.hibernate.annotations.GenericGenerator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import br.com.fateczs.seazs.utils.TipoUsuario;
 import br.com.fateczs.seazs.utils.Turno;
@@ -39,6 +40,7 @@ public class Usuario {
 
 
 	@NotNull
+	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
 	@Column(name = "senha", nullable = false)
 	private String senha;
 
@@ -236,7 +238,6 @@ public class Usuario {
 		result = prime * result + ((nome == null) ? 0 : nome.hashCode());
 		result = prime * result + ((rg == null) ? 0 : rg.hashCode());
 		result = prime * result + ((semestre == null) ? 0 : semestre.hashCode());
-		result = prime * result + ((senha == null) ? 0 : senha.hashCode());
 		result = prime * result + ((tipoUsuario == null) ? 0 : tipoUsuario.hashCode());
 		result = prime * result + ((turno == null) ? 0 : turno.hashCode());
 		return result;
@@ -310,11 +311,6 @@ public class Usuario {
 			if (other.semestre != null)
 				return false;
 		} else if (!semestre.equals(other.semestre))
-			return false;
-		if (senha == null) {
-			if (other.senha != null)
-				return false;
-		} else if (!senha.equals(other.senha))
 			return false;
 		if (tipoUsuario == null) {
 			if (other.tipoUsuario != null)
