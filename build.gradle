@@ -33,7 +33,7 @@ dependencies {
     // integration: banco em memoria (versao gerenciada pelo BOM do Boot)
     testRuntime group: 'com.h2database', name: 'h2'
     // featureTest: MySQL real via Docker (a ultima 1.x compativel com Java 8 e JUnit 4)
-    testCompile group: 'org.testcontainers', name: 'mysql', version: '1.19.8'
+    testCompile group: 'org.testcontainers', name: 'mysql', version: '1.21.4'
 }
 
 // Camadas da piramide de testes, separadas por pacote em src/test (unit, integration, featureTest).
