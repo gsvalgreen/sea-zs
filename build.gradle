@@ -24,7 +24,7 @@ tasks.withType(JavaCompile) {
 
 repositories {
 
-    maven { url "https://repo.maven.apache.org/maven2" }
+    maven { url = "https://repo.maven.apache.org/maven2" }
 }
 dependencies {
     // Versoes gerenciadas pelo BOM do Boot (3.5.x: Hibernate 6.6, H2 2.3, JUnit Jupiter 5.12, Mockito 5.17, Testcontainers 1.21).
