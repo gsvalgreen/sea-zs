@@ -1,5 +1,6 @@
 package br.com.fateczs.seazs.controller;
 
+import java.time.Clock;
 import java.util.Date;
 import java.util.List;
 
@@ -24,7 +25,7 @@ public class EventoController {
 	@PostMapping("/inserir")
 	@ResponseBody
 	public void inserirEvento(@Valid @RequestBody Evento evento) {
-		evento.setDataInclusao(new Date(System.currentTimeMillis()));
+		evento.setDataInclusao(new Date(clock.millis()));
 		eventoServ.inserir(evento);
 	}
 	
@@ -65,6 +66,9 @@ public class EventoController {
 		return eventoServ.listarDisponivelPorDataAsc();
 	}
 	
+	@Autowired
+	private Clock clock;
+
 	@Autowired
 	private EventoService eventoServ;
 

@@ -1,5 +1,6 @@
 package br.com.fateczs.seazs.service.serviceImpl;
 
+import java.time.Clock;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -22,7 +23,12 @@ public class InscricaoServiceImpl implements InscricaoService {
 
 	private static final Logger log = LoggerFactory.getLogger(InscricaoServiceImpl.class);
 	
-	private DataUtils operaData = new DataUtils();
+	@Autowired
+	private Clock clock;
+
+	private DataUtils operaData() {
+		return new DataUtils(clock);
+	}
 	
 	@Override
 	public Inscricao buscar(Inscricao inscricao) {
@@ -31,7 +37,7 @@ public class InscricaoServiceImpl implements InscricaoService {
 
 	@Override
 	public void inserir(Inscricao inscricao) {
-		inscricao.setDtInscricao(operaData.getDataAtual().getTime());;
+		inscricao.setDtInscricao(operaData().getDataAtual().getTime());;
 		inscricao.setCheckIn(false);
 		inscricao.setCheckOut(false);
 		inscricao.setPontuacaoRecebida(0);
@@ -85,7 +91,8 @@ public class InscricaoServiceImpl implements InscricaoService {
 	@Override
 	public Inscricao validaPresenca(Inscricao inscricao) {
 		inscricao = buscar(inscricao);
-		Date agora = new Date();
+		DataUtils operaData = operaData();
+		Date agora = new Date(clock.millis());
 		Date inicioEntrada = operaData.somaMinutos(inscricao.getAtividade().getInicioAtividade(), -10);
 		Date fimEntrada = operaData.somaMinutos(inscricao.getAtividade().getInicioAtividade(), 30);
 		Date inicioSaida = operaData.somaMinutos(inscricao.getAtividade().getFimAtividade(), -10);
@@ -164,8 +171,11 @@ public class InscricaoServiceImpl implements InscricaoService {
 	@Override
 	public Integer somaTotalDePontosNoSemestre(Usuario usuario) {
 		Integer pontuacao = null;
-		Calendar dataIni = Calendar.getInstance();
-		Calendar dataFim = Calendar.getInstance();
+		Calendar dataIni = Calendar.getInstance(DataUtils.TIME_ZONE);
+		dataIni.setTimeInMillis(clock.millis());
+		Calendar dataFim = Calendar.getInstance(DataUtils.TIME_ZONE);
+		dataFim.setTimeInMillis(clock.millis());
+		DataUtils operaData = operaData();
 		if (operaData.verificaSemestre(operaData.getDataAtual()) == 1){
 			dataIni.set(dataIni.get(Calendar.YEAR), 0, 1, 0 , 0 , 1);
 			dataFim.set(dataFim.get(Calendar.YEAR), 6, 31, 23, 59, 59);

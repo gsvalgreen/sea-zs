@@ -11,16 +11,21 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.data.domain.Sort;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import br.com.fateczs.seazs.model.Agendamento;
 import br.com.fateczs.seazs.model.StaffAgendamento;
@@ -39,6 +44,13 @@ public class StaffAgendamentoServiceImplTest {
 	@InjectMocks
 	private StaffAgendamentoServiceImpl service;
 
+	private static final Instant AGORA = Instant.parse("2019-03-15T15:00:00Z");
+
+	@Before
+	public void fixaRelogio() {
+		ReflectionTestUtils.setField(service, "clock", Clock.fixed(AGORA, ZoneId.of("America/Sao_Paulo")));
+	}
+
 	private StaffAgendamento requisicao() {
 		Agendamento agendamento = new Agendamento();
 		agendamento.setId(1);
@@ -51,7 +63,7 @@ public class StaffAgendamentoServiceImplTest {
 	}
 
 	private StaffAgendamento persistido(long inicioOffsetMin, long fimOffsetMin) {
-		long agora = System.currentTimeMillis();
+		long agora = AGORA.toEpochMilli();
 		Agendamento agendamento = new Agendamento();
 		agendamento.setInicio(new Date(agora + inicioOffsetMin * MINUTO));
 		agendamento.setFim(new Date(agora + fimOffsetMin * MINUTO));
