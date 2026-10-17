@@ -11,7 +11,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Java 8 is required (`.sdkmanrc` pins `java=8.0.502-tem`; run `sdk env`).
 - Database: MySQL 5.7 on `localhost:3306`, db `seazs`, user `root` / password `system` (see `src/main/resources/application.properties`). Start it with the repo `Dockerfile`:
   `docker build -t seazs-mysql . && docker run -d -p 3306:3306 --name seazs-mysql seazs-mysql`
-- Tests: single test by class: `./gradlew test --tests 'br.com.fateczs.seazs.SeazsApplicationTests'`. The only test is `contextLoads` (JUnit 4, `@SpringBootTest`), so it needs the MySQL instance running.
+- Tests (Gradle tasks, one per pyramid layer, split by package under `src/test`):
+  - `./gradlew test` runs only `unit` (fast, no Spring/DB/Docker) and is finalized by the JaCoCo report.
+  - `./gradlew integrationTest` runs `integration` (H2, `@DataJpaTest`, `@WebMvcTest`); no Docker needed.
+  - `./gradlew featureTest` runs `featureTest` (full flows against a real MySQL 5.7 via Testcontainers). It **requires Docker**; without Docker these tests are skipped, not failed.
+  - `./gradlew check` / `build` runs all three plus `jacocoTestCoverageVerification`.
+  - Single class: `./gradlew test --tests 'br.com.fateczs.seazs.unit.service.UsuarioServiceImplTest'` (use the task of the matching layer).
 - No lint tooling is configured.
 
 ## Testing

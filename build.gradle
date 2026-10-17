@@ -111,3 +111,16 @@ test.finalizedBy jacocoTestReport
 // Gradle 4.5 nao liga jacocoTestCoverageVerification ao `check` automaticamente.
 check.dependsOn jacocoTestCoverageVerification
 jacocoTestCoverageVerification.mustRunAfter jacocoTestReport
+
+// Cobertura combinada das tres camadas (test + integrationTest + featureTest).
+// Sem isso o relatorio e o gate considerariam apenas os testes unitarios.
+// Com `build`/`check` o relatorio roda de novo apos as tres camadas (check.dependsOn abaixo);
+// `.exec` ausente (ex.: featureTest pulado sem Docker) e ignorado pelo filtro `exists`.
+def execucoesJacoco = files({
+    [test, integrationTest, featureTest].collect { it.extensions.getByType(JacocoTaskExtension).destinationFile }
+            .findAll { it.exists() }
+})
+jacocoTestReport.executionData = execucoesJacoco
+jacocoTestCoverageVerification.executionData = execucoesJacoco
+[jacocoTestReport, jacocoTestCoverageVerification].each { it.mustRunAfter integrationTest, featureTest }
+check.dependsOn jacocoTestReport

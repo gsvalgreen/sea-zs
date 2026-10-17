@@ -38,8 +38,8 @@ import br.com.fateczs.seazs.service.InscricaoService;
 
 /**
  * Serializacao JSON dos grafos de entidades devolvidos por Evento, Agendamento, Inscricao e Certificado.
- * Os testes "..._hoje_expoeASenha..." sao de CARACTERIZACAO DE SEGURANCA: o hotfix
- * (@JsonProperty(access = WRITE_ONLY) em Usuario.senha) vai inverter para `doesNotExist()`.
+ * Os testes "..._naoExpoeASenha..." garantem o contrato do hotfix de seguranca
+ * (@JsonProperty(access = WRITE_ONLY) em Usuario.senha): a senha nunca aparece nas respostas.
  */
 @RunWith(SpringRunner.class)
 @WebMvcTest({ EventoController.class, AgendamentoController.class, InscricaoController.class,
@@ -89,11 +89,11 @@ public class EntidadesAninhadasWebMvcTest {
 	}
 
 	@Test
-	public void listarEvento_hoje_expoeASenhaDoUsuarioCriador_hotfixDeSegurancaVaiInverterEsteTeste() throws Exception {
+	public void listarEvento_naoExpoeASenhaDoUsuarioCriador() throws Exception {
 		when(eventoService.listar()).thenReturn(Collections.singletonList(evento));
 
 		mvc.perform(post("/evento/listar"))
-				.andExpect(jsonPath("$[0].usuarioCriador.senha").value("segredo123"));
+				.andExpect(jsonPath("$[0].usuarioCriador.senha").doesNotExist());
 	}
 
 	@Test
@@ -107,11 +107,11 @@ public class EntidadesAninhadasWebMvcTest {
 	}
 
 	@Test
-	public void listarAgendamento_hoje_expoeASenhaDoOrganizador_hotfixDeSegurancaVaiInverterEsteTeste() throws Exception {
+	public void listarAgendamento_naoExpoeASenhaDoOrganizador() throws Exception {
 		when(agendamentoService.listar()).thenReturn(Collections.singletonList(agendamento));
 
 		mvc.perform(post("/agendamento/listar"))
-				.andExpect(jsonPath("$[0].usuarioOrganizador.senha").value("segredo123"));
+				.andExpect(jsonPath("$[0].usuarioOrganizador.senha").doesNotExist());
 	}
 
 	@Test
@@ -129,12 +129,12 @@ public class EntidadesAninhadasWebMvcTest {
 	}
 
 	@Test
-	public void listarInscricao_hoje_expoeASenhaDoInscrito_hotfixDeSegurancaVaiInverterEsteTeste() throws Exception {
+	public void listarInscricao_naoExpoeASenhaDoInscrito() throws Exception {
 		Inscricao inscricao = DadosTeste.inscricao(atividade, ana, papel(), DadosTeste.PASSADO, true, false, 0);
 		when(inscricaoService.listar()).thenReturn(Collections.singletonList(inscricao));
 
 		mvc.perform(post("/atividade/inscricao/listar"))
-				.andExpect(jsonPath("$[0].usuario.senha").value("segredo123"));
+				.andExpect(jsonPath("$[0].usuario.senha").doesNotExist());
 	}
 
 	@Test

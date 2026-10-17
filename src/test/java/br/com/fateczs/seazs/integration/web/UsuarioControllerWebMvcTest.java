@@ -55,41 +55,38 @@ public class UsuarioControllerWebMvcTest {
 		return u;
 	}
 
-	// ---- CARACTERIZACAO DE SEGURANCA ----------------------------------------------------------
-	// Os tres testes abaixo registram HOJE o vazamento do campo `senha` (texto puro) nas respostas.
-	// O hotfix de seguranca (@JsonProperty(access = WRITE_ONLY) em Usuario.senha, Usuario.java:~30)
-	// vai INVERTER estes testes: o campo `senha` deve DEIXAR de existir nas respostas. Quando o hotfix
-	// entrar, troque `jsonPath("$.senha").value(...)` por `jsonPath("$.senha").doesNotExist()`.
+	// ---- CONTRATO DE SEGURANCA (hotfix) -------------------------------------------------------
+	// Usuario.senha e @JsonProperty(access = WRITE_ONLY): aceita na entrada, nunca serializada na saida.
 	// --------------------------------------------------------------------------------------------
 
 	@Test
-	public void login_hoje_expoeASenhaNaResposta_hotfixDeSegurancaVaiInverterEsteTeste() throws Exception {
+	public void login_naoExpoeASenhaNaResposta() throws Exception {
 		when(usuarioService.validarLogin(any(Usuario.class))).thenReturn(usuarioCompleto());
 
 		mvc.perform(post("/usuario/login").contentType(MediaType.APPLICATION_JSON).content(CORPO_USUARIO))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.senha").value("segredo123"));
+				.andExpect(jsonPath("$.senha").doesNotExist());
 	}
 
 	@Test
-	public void buscar_hoje_expoeASenhaNaResposta_hotfixDeSegurancaVaiInverterEsteTeste() throws Exception {
+	public void buscar_naoExpoeASenhaNaResposta() throws Exception {
 		when(usuarioService.buscar(any(Usuario.class))).thenReturn(usuarioCompleto());
 
 		mvc.perform(post("/usuario/buscar").contentType(MediaType.APPLICATION_JSON).content(CORPO_USUARIO))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.senha").value("segredo123"));
+				.andExpect(jsonPath("$.senha").doesNotExist());
 	}
 
 	@Test
-	public void listar_hoje_expoeASenhaDeTodosOsUsuarios_hotfixDeSegurancaVaiInverterEsteTeste() throws Exception {
+	public void listar_naoExpoeASenhaDeNenhumUsuario() throws Exception {
 		Usuario outro = DadosTeste.usuario("bia@teste.com");
 		outro.setSenha("outraSenha");
 		when(usuarioService.listar()).thenReturn(Arrays.asList(usuarioCompleto(), outro));
 
 		mvc.perform(post("/usuario/listar"))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$[0].senha").value("segredo123"))
-				.andExpect(jsonPath("$[1].senha").value("outraSenha"));
+				.andExpect(jsonPath("$[0].senha").doesNotExist())
+				.andExpect(jsonPath("$[1].senha").doesNotExist());
 	}
 
 	// ---- Contrato JSON atual --------------------------------------------------------------------
