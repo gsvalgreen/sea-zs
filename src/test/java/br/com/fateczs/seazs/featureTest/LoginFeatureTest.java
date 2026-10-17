@@ -28,7 +28,7 @@ public class LoginFeatureTest extends FeatureTestBase {
 	}
 
 	/**
-	 * Caracterizacao (divergencia H2 x MySQL), CONFIRMADA por execucao em MySQL 5.7 real (Testcontainers) com
+	 * Caracterizacao (divergencia H2 x MySQL), CONFIRMADA por execucao em MySQL 5.7 e 8.4 reais (Testcontainers) com
 	 * --collation-server=utf8mb4_unicode_ci: a query derivada getByEmailAndSenha compara a senha sem diferenciar
 	 * maiusculas de minusculas, entao "SEGREDO123" autentica quem tem senha "Segredo123" (UsuarioRepository.java:11).
 	 * No H2 (camada integration) a comparacao e case-sensitive e esse login falharia. Comportamento inseguro que

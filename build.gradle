@@ -94,16 +94,10 @@ jacocoTestReport {
 // ---------------------------------------------------------------------------
 // Qualidade/CI (mantido isolado; usado por .github/workflows/ci.yml)
 // ---------------------------------------------------------------------------
-// Compativel com Gradle 6.9 (Java 8). Ao migrar o Gradle/Boot/Java, revisar:
-//  - Sonar NAO usa o plugin Gradle: o scanner atual exige JVM 17 e o Gradle 6.9
-//    roda so em JDK <= 16 (testado com Gradle 4.5: plugin 2.7.1 falha com "class file version 61").
-//    O CI usa SonarSource/sonarqube-scan-action + sonar-project.properties.
-//    Apos migrar para Gradle 7+/JDK 17 da para trocar por `id 'org.sonarqube'`
-//    e remover sonar-project.properties e o passo do scan-action;
-//  - jacoco toolVersion: 0.8.5 nao le classes Java 17+ (usar >= 0.8.11);
-//  - sintaxe: `xml.enabled`/`html.enabled` viram `xml.required`/`html.required`
-//    (Gradle 7+); `sonar.coverage.jacoco.xmlReportPaths` permanece;
-//  - setup-java do CI e a versao do JDK no workflow (hoje 8, ver .sdkmanrc);
+// Gradle 7.6 / JDK 17 / jacoco 0.8.12. Pendencias para as proximas etapas do plano:
+//  - Sonar continua via SonarSource/sonarqube-scan-action + sonar-project.properties (o scanner exige JVM 17,
+//    que agora e a JVM do build): da para trocar por `id 'org.sonarqube'` e remover o passo do scan-action;
+//  - Gradle 8+: `xml.required`/`html.required` ja estao na sintaxe nova; `sonar.coverage.jacoco.xmlReportPaths` permanece;
 //  - revisar os limiares abaixo se a cobertura mudar.
 // Limiar = cobertura medida em 2026-10 (instrucoes 94,5%; branches 75,5%),
 // levemente abaixo. Medida sem o contextLoads (sem MySQL); no CI ele roda.
