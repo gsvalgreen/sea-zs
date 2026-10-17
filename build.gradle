@@ -32,7 +32,7 @@ dependencies {
     testCompile group: 'org.springframework.boot', name: 'spring-boot-starter-test', version:'2.0.3.RELEASE'
     // integration: banco em memoria (versao gerenciada pelo BOM do Boot)
     testRuntime group: 'com.h2database', name: 'h2'
-    // featureTest: MySQL real via Docker (a ultima 1.x compativel com Java 8 e JUnit 4)
+    // featureTest: MySQL real via Docker (1.x, compativel com Java 8 e JUnit 4)
     testCompile group: 'org.testcontainers', name: 'mysql', version: '1.21.4'
 }
 
