@@ -20,9 +20,6 @@ import br.com.fateczs.seazs.featureTest.support.FeatureTestBase;
  */
 public class PresencaCertificadoFeatureTest extends FeatureTestBase {
 
-	private static final long MINUTO = 60_000L;
-	private static final long HORA = 60 * MINUTO;
-
 	private int idInscricao(int idUsuario) throws Exception {
 		return primeiroId("/atividade/inscricao/listarUsuario", "{\"id\":" + idUsuario + "}",
 				"$[*].sequencialInscricao");
@@ -39,8 +36,8 @@ public class PresencaCertificadoFeatureTest extends FeatureTestBase {
 		long agora = System.currentTimeMillis();
 		int usuario = criarUsuario(unico("aluno") + "@teste.com", "s");
 		int papel = criarPapel(unico("Participante"));
-		int evento = criarEvento(unico("Evento"), usuario, agora - HORA, agora + 24 * HORA);
-		int agendamento = criarAgendamento(evento, usuario, agora - HORA, agora + 24 * HORA, 20);
+		int evento = criarEvento(unico("Evento"), usuario, agora - HORA, agora + DIA);
+		int agendamento = criarAgendamento(evento, usuario, agora - HORA, agora + DIA, 20);
 		String nomeAtividade = unico("Atividade");
 		int atividade = criarAtividade(nomeAtividade, agendamento, agora - 2 * MINUTO, agora + 2 * HORA, true);
 		inscrever(atividade, usuario, papel);
@@ -61,13 +58,9 @@ public class PresencaCertificadoFeatureTest extends FeatureTestBase {
 		long agora = System.currentTimeMillis();
 		int usuario = criarUsuario(unico("staff") + "@teste.com", "s");
 		String nomeEvento = unico("Evento");
-		int evento = criarEvento(nomeEvento, usuario, agora - HORA, agora + 24 * HORA);
+		int evento = criarEvento(nomeEvento, usuario, agora - HORA, agora + DIA);
 		int agendamento = criarAgendamento(evento, usuario, agora - 2 * MINUTO, agora + 3 * HORA, 20);
-		postar("/agendamento/staff/inserir", "{\"agendamento\":{\"id\":" + agendamento + "},\"usuario\":{\"id\":" + usuario
-				+ "},\"dtInscricao\":" + agora + ",\"checkIn\":false,\"checkOut\":false}");
-
-		postar("/agendamento/staff/ValidarPresenca",
-				"{\"agendamento\":{\"id\":" + agendamento + "},\"usuario\":{\"id\":" + usuario + "}}");
+		inscreverStaffEValidarPresenca(agendamento, usuario, agora);
 
 		mvc.perform(post("/certificado/agendamento/emitir").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"agendamento\":{\"id\":" + agendamento + "},\"usuario\":{\"id\":" + usuario + "}}"))
@@ -87,15 +80,12 @@ public class PresencaCertificadoFeatureTest extends FeatureTestBase {
 		long agora = System.currentTimeMillis();
 		int usuario = criarUsuario(unico("aluno") + "@teste.com", "s");
 		int papel = criarPapel(unico("Participante"));
-		int evento = criarEvento(unico("Evento"), usuario, agora - HORA, agora + 24 * HORA);
+		int evento = criarEvento(unico("Evento"), usuario, agora - HORA, agora + DIA);
 		int agendamento = criarAgendamento(evento, usuario, agora - 2 * MINUTO, agora + 3 * HORA, 20);
 		int atividade = criarAtividade(unico("Atividade"), agendamento, agora - 2 * MINUTO, agora + 2 * HORA, true);
 		inscrever(atividade, usuario, papel);
 		validarPresenca(idInscricao(usuario), atividade, usuario, papel);
-		postar("/agendamento/staff/inserir", "{\"agendamento\":{\"id\":" + agendamento + "},\"usuario\":{\"id\":" + usuario
-				+ "},\"dtInscricao\":" + agora + ",\"checkIn\":false,\"checkOut\":false}");
-		postar("/agendamento/staff/ValidarPresenca",
-				"{\"agendamento\":{\"id\":" + agendamento + "},\"usuario\":{\"id\":" + usuario + "}}");
+		inscreverStaffEValidarPresenca(agendamento, usuario, agora);
 
 		String total = postar("/atividade/inscricao/somarPontos", "{\"id\":" + usuario + "}");
 

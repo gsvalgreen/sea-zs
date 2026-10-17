@@ -46,6 +46,10 @@ import com.jayway.jsonpath.JsonPath;
 @ContextConfiguration(initializers = FeatureTestBase.MySqlInitializer.class)
 public abstract class FeatureTestBase {
 
+	protected static final long MINUTO = 60_000L;
+	protected static final long HORA = 60 * MINUTO;
+	protected static final long DIA = 24 * HORA;
+
 	private static MySQLContainer<?> mysql;
 
 	@Autowired
@@ -149,5 +153,13 @@ public abstract class FeatureTestBase {
 	protected static String referenciaInscricao(int idAtividade, int idUsuario, int idPapel) {
 		return "{\"atividade\":{\"id\":" + idAtividade + "},\"usuario\":{\"id\":" + idUsuario
 				+ "},\"papel\":{\"id\":" + idPapel + "}}";
+	}
+
+	/** Inscreve o usuario como staff do agendamento e valida a presenca (check-in) dele. */
+	protected void inscreverStaffEValidarPresenca(int idAgendamento, int idUsuario, long dtInscricao) throws Exception {
+		postar("/agendamento/staff/inserir", "{\"agendamento\":{\"id\":" + idAgendamento + "},\"usuario\":{\"id\":"
+				+ idUsuario + "},\"dtInscricao\":" + dtInscricao + ",\"checkIn\":false,\"checkOut\":false}");
+		postar("/agendamento/staff/ValidarPresenca",
+				"{\"agendamento\":{\"id\":" + idAgendamento + "},\"usuario\":{\"id\":" + idUsuario + "}}");
 	}
 }

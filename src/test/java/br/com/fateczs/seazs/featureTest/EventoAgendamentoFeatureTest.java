@@ -15,17 +15,15 @@ import br.com.fateczs.seazs.featureTest.support.FeatureTestBase;
  */
 public class EventoAgendamentoFeatureTest extends FeatureTestBase {
 
-	private static final long UM_DIA = 24L * 60 * 60 * 1000;
-
 	@Test
 	public void criarEventoAgendamentoEAtividade_apareceNasListagensDoEventoEDoAgendamento() throws Exception {
 		long agora = System.currentTimeMillis();
 		int organizador = criarUsuario(unico("org") + "@teste.com", "s");
 		String nomeEvento = unico("Evento");
-		int evento = criarEvento(nomeEvento, organizador, agora + UM_DIA, agora + 2 * UM_DIA);
-		int agendamento = criarAgendamento(evento, organizador, agora + UM_DIA, agora + 2 * UM_DIA, 20);
+		int evento = criarEvento(nomeEvento, organizador, agora + DIA, agora + 2 * DIA);
+		int agendamento = criarAgendamento(evento, organizador, agora + DIA, agora + 2 * DIA, 20);
 		String nomeAtividade = unico("Atividade");
-		int atividade = criarAtividade(nomeAtividade, agendamento, agora + UM_DIA, agora + UM_DIA + 3_600_000L, false);
+		int atividade = criarAtividade(nomeAtividade, agendamento, agora + DIA, agora + DIA + HORA, false);
 
 		mvc.perform(post("/agendamento/listarEvento").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"id\":" + evento + "}"))
