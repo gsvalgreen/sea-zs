@@ -28,7 +28,7 @@ Ao criar uma nova funcionalidade, respeite essas camadas: nada de regra de negó
 - A versão do JDK está no `.sdkmanrc` e no toolchain do `build.gradle` (hoje Java 17; rode `sdk env`). Use apenas recursos da versão vigente; a migração de versões segue `docs/PLANO-MODERNIZACAO.md`.
 - MySQL 8.4 em `localhost:3306`, banco `seazs`. Hibernate gera as tabelas (`ddl-auto=update`); `schema.sql` é só referência e não é carregado.
 - `build.gradle` usa o BOM do plugin Boot (sem versões fixas nos starters) e as configurações `implementation`/`runtimeOnly`/`developmentOnly`/`testImplementation`. Ao mexer em dependências, não fixe versões que o BOM gerencia e avise sobre incompatibilidades.
-- Mantenha `application.properties` em ASCII, e preserve CRLF nos `.java` existentes ao editá-los.
+- Mantenha `application.properties` em ASCII, e preserve CRLF nos `.java` existentes de `src/main` (os testes usam LF) ao editá-los.
 
 ## Testes (Pirâmide de Testes)
 

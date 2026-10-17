@@ -15,7 +15,9 @@ import br.com.fateczs.seazs.model.Evento;
 /**
  * Caracteriza o formato de data devolvido pela API (Jackson do Boot 2.7 com
  * spring.jackson.time-zone=America/Sao_Paulo), para detectar mudanca silenciosa
- * na migracao para Boot 3/4.
+ * na migracao para Boot 3/4. Usa um ObjectMapper montado a mao: protege contra
+ * mudanca no Jackson ou na entidade, mas NAO valida a propriedade
+ * spring.jackson.time-zone do application.properties.
  */
 public class DataJsonFormatoTest {
 

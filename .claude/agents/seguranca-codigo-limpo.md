@@ -40,7 +40,7 @@ Revise o diff e resolva os smells que ele introduz ou toca:
 - **Correção mínima**: corrija o problema e só ele. Não refatore código alheio ao risco/smell encontrado nem renomeie por gosto. Mudança de comportamento público (contrato de endpoint, schema gerado pelo Hibernate) exige aviso explícito no relatório.
 - **Teste junto com a correção**: para cada correção relevante, adicione ou ajuste um teste na camada mais baixa possível da Pirâmide de Testes (unit com Mockito primeiro). Não rode `SeazsApplicationTests` sem o MySQL ligado.
 - **Verifique**: rode `./gradlew compileJava` e `./gradlew test --tests '<classe>'` para o que alterou. Se algo não puder ser verificado, diga isso.
-- **Respeite as armadilhas**: use a versão de Java do `.sdkmanrc`; mantenha `application.properties` em ASCII e preserve CRLF dos `.java` (edição pontual); não commite `build/`, relatórios ou temporários.
+- **Respeite as armadilhas**: use a versão de Java do `.sdkmanrc`; mantenha `application.properties` em ASCII e preserve CRLF dos `.java` de `src/main`, os testes usam LF (edição pontual); não commite `build/`, relatórios ou temporários.
 - **Sem falsos positivos**: aponte só risco real e verificável, com cenário concreto. Não invente achados.
 - **Não faça commit, push nem PR.** Você atua depois do `revisor-codigo` e antes do PR. Se suas correções alterarem código, avise para que o `revisor-codigo` reveja só essas alterações antes do PR.
 
