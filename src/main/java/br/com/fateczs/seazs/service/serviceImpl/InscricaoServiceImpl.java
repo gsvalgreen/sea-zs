@@ -4,6 +4,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,8 @@ import br.com.fateczs.seazs.utils.DataUtils;
 
 @Service
 public class InscricaoServiceImpl implements InscricaoService {
+
+	private static final Logger log = LoggerFactory.getLogger(InscricaoServiceImpl.class);
 	
 	private DataUtils operaData = new DataUtils();
 	
@@ -87,20 +91,15 @@ public class InscricaoServiceImpl implements InscricaoService {
 		Date inicioSaida = operaData.somaMinutos(inscricao.getAtividade().getFimAtividade(), -10);
 		Date fimSaida = operaData.somaMinutos(inscricao.getAtividade().getFimAtividade(), 30);
 		
-		System.out.println("agora: " + agora.toLocaleString());
-		System.out.println("inicioEntrada: " + inicioEntrada.toLocaleString());
-		System.out.println("fimEntrada: " + fimEntrada.toLocaleString());
-		System.out.println("inicioSaida: " + inicioSaida.toLocaleString());
-		System.out.println("fimSaida: " + fimSaida.toLocaleString());
 		
 		// Verifica se a Atividade não é Continua para realizar checkIn ou CheckOut
 		if(!inscricao.getAtividade().getFlagContinua()) {
 			//Verifica se está dentro do horário de checkIn
 			if(agora.before(fimEntrada)) {
 				if(agora.after(inicioEntrada)) {
-					System.out.println("Dentro do horário de entrada");
+					log.debug("Dentro do horário de entrada");
 					if (!inscricao.getCheckIn()) {
-						System.out.println("Fez Check In");
+						log.debug("Fez Check In");
 						inscricao.setCheckIn(true);
 						repository.save(inscricao);
 					}
@@ -109,16 +108,16 @@ public class InscricaoServiceImpl implements InscricaoService {
 			//Verifica se está dentro do horário de checkOut
 			else if (agora.before(fimSaida)) {
 				if(agora.after(inicioSaida)) {
-					System.out.println("Dentro do horário de saida");
+					log.debug("Dentro do horário de saida");
 					if (!inscricao.getCheckOut()) {
-						System.out.println("Fez Check Out");
+						log.debug("Fez Check Out");
 						inscricao.setCheckOut(true);
 						repository.save(inscricao);
 					}
 				}
 			}
 			if (inscricao.getCheckIn() && inscricao.getCheckOut()) {
-						System.out.println("Presença validada, contabilizando pontos");
+						log.debug("Presença validada, contabilizando pontos");
 						inscricao.setPontuacaoRecebida(inscricao.getAtividade().getPontuacaoParticipante());
 						repository.save(inscricao);
 			}
@@ -127,15 +126,15 @@ public class InscricaoServiceImpl implements InscricaoService {
 				inscricao.setCheckIn(true);
 				inscricao.setCheckOut(true);
 				if(inscricao.getAtividade().getFlagCumulativa()) {
-					System.out.println("[Contínua/Cumulativa] Presença Validada, contabilizando pontos");
+					log.debug("[Contínua/Cumulativa] Presença Validada, contabilizando pontos");
 					if((inscricao.getPontuacaoRecebida()/inscricao.getAtividade().getPontuacaoParticipante()) < inscricao.getAtividade().getQtdCheckIn()) {
-						System.out.println("mais um");
+						log.debug("mais um");
 						inscricao.setPontuacaoRecebida(inscricao.getPontuacaoRecebida() + inscricao.getAtividade().getPontuacaoParticipante());
 						inscricao = repository.save(inscricao);
-					}else System.out.println("Número máximo de checkIns Realizados");
+					}else log.debug("Número máximo de checkIns Realizados");
 				}
 				else {
-					System.out.println("[Contínua] Presença validada, contabilizando pontos");
+					log.debug("[Contínua] Presença validada, contabilizando pontos");
 					inscricao.setPontuacaoRecebida(inscricao.getAtividade().getPontuacaoParticipante());
 					inscricao = repository.save(inscricao);
 				}

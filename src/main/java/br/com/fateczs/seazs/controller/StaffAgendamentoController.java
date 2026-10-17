@@ -60,7 +60,6 @@ public class StaffAgendamentoController {
 	@ResponseBody
 	public StaffAgendamento validarPresenca(@RequestBody StaffAgendamento staff) {
 		staff.toString();
-		System.out.println(staff.getAgendamento().getId());
 		return staffServ.validarPresencaStaff(staff);
 	}
 	
