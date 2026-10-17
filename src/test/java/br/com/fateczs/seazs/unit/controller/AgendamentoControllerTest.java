@@ -64,7 +64,7 @@ public class AgendamentoControllerTest {
 	}
 
 	@Test
-	public void lsitarAgendamentoPorDtinicioDelegaParaOService() {
+	public void listarAgendamentoPorDtInicioDelegaParaOService() {
 		List<Agendamento> esperado = new ArrayList<>();
 		when(agendamentoServ.listarPorDataAsc()).thenReturn(esperado);
 		assertSame(esperado, controller.lsitarAgendamentoPorDtinicio());
