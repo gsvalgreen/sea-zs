@@ -8,7 +8,7 @@ import br.com.fateczs.seazs.service.CertificadoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 
 @RestController

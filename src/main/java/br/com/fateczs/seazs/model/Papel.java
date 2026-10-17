@@ -1,24 +1,19 @@
 package br.com.fateczs.seazs.model;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
-import org.hibernate.annotations.GenericGenerator;
 
 @Entity(name = "Papel")
 @Table(name = "tb_Papel")
 public class Papel {
 	
 	@Id
-	@GeneratedValue(strategy = GenerationType.AUTO, generator="native")
-	@GenericGenerator(
-			name = "native",
-			strategy = "native"
-			)
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "id_papel")
 	private Integer id;
 	

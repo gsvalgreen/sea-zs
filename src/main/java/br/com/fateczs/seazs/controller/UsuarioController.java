@@ -2,7 +2,7 @@ package br.com.fateczs.seazs.controller;
 
 import java.util.List;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 import br.com.fateczs.seazs.model.CrachaUsuario;
 import org.springframework.beans.factory.annotation.Autowired;
