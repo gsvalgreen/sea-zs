@@ -1,0 +1,81 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+# Cancela execucoes antigas da mesma branch/PR.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # Secrets chegam vazios em PR de fork: o passo do Sonar e pulado nesse caso.
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: system
+          MYSQL_DATABASE: seazs
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -psystem --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Sonar precisa do historico completo para blame/novo codigo.
+          fetch-depth: 0
+
+      # Java 8 (igual ao .sdkmanrc; Gradle 4.5 nao roda em JDK mais novo).
+      # Ao migrar para Java 17/25, ajustar java-version manualmente.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+          # gradle/actions/setup-gradle nao suporta Gradle 4.5; cache via setup-java.
+          cache: gradle
+
+      - name: Build, testes e cobertura (JaCoCo)
+        # `build` executa test, jacocoTestReport (finalizedBy) e
+        # jacocoTestCoverageVerification (via check): falha abaixo do limiar.
+        run: ./gradlew build --no-daemon
+        env:
+          # useSSL=false: driver 5.1.46 + MySQL 5.7 sem TLS 1.0/1.1 no JDK 8 recente.
+          SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/seazs?useSSL=false
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: system
+
+      - name: Analise SonarCloud
+        if: ${{ env.SONAR_TOKEN != '' && vars.SONAR_ORGANIZATION != '' && vars.SONAR_PROJECT_KEY != '' }}
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL || 'https://sonarcloud.io' }}
+        with:
+          args: >
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
+            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
+
+      - name: Relatorios de teste e cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorios
+          if-no-files-found: ignore
+          retention-days: 14
+          path: |
+            build/reports/tests/
+            build/test-results/
+            build/reports/jacoco/
