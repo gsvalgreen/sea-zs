@@ -56,6 +56,8 @@ jobs:
           DB_URL: jdbc:mysql://127.0.0.1:3306/seazs
           DB_USER: root
           DB_PASSWORD: system
+          # Segredo JWT descartavel, so para os testes do CI (nao e um segredo real; em producao vem do ambiente).
+          JWT_SECRET: ci-only-jwt-secret-not-for-production-0123456789
 
       # Detecta se o Sonar pode rodar, sem imprimir o secret. Em PR de fork o
       # secret chega vazio. O token so e injetado neste passo e no scan.

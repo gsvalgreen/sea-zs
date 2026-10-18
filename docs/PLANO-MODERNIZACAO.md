@@ -102,6 +102,7 @@ Resultado esperado: stack em Java 25 + Boot 4.x (via 3.5.x), autenticação com 
 6. Flyway com `ddl-auto=validate` nos ambientes não locais; Testcontainers no featureTest. (Feito: `V1__baseline.sql`, `FLYWAY_ENABLED`/`DDL_AUTO`, featureTest com Flyway + `validate`.)
 
 ### Fase 2, segurança
+- Passo 2a (autenticação) implementado: JWT HS256 + refresh rotativo, BCrypt com migração de senhas, CORS global, `equals/hashCode` de `Usuario` por `id`. Pendentes: 2b (RBAC e fechamento das rotas legadas, mass assignment, IDOR), rate limit/lockout de login, limpeza periódica de refresh tokens expirados, front.
 - `spring-boot-starter-security`, `DelegatingPasswordEncoder` (BCrypt), `UserDetailsService` por e-mail.
 - Migração de senhas: prefixo `{noop}` nas existentes + rehash no próximo login (`upgradeEncoding`) ou reset.
 - `POST /api/v1/auth/login` -> JWT de vida curta (+ refresh), 401 genérico, rate limit/lockout.
