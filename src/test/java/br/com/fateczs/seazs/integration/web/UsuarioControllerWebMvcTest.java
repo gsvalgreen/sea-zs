@@ -234,4 +234,14 @@ public class UsuarioControllerWebMvcTest {
 				.andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("ana@teste.com"))))
 				.andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Duplicate"))));
 	}
+
+	@Test
+	public void excluir_ultimoAdministradorRecusadoResponde409() throws Exception {
+		org.mockito.Mockito.doThrow(new br.com.fateczs.seazs.service.PerfilInvalidoException("nao e possivel excluir o ultimo administrador"))
+				.when(usuarioService).excluir(any(Usuario.class));
+
+		mvc.perform(post("/usuario/excluir").with(admin()).contentType(MediaType.APPLICATION_JSON).content(CORPO_USUARIO))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.detail").value("nao e possivel excluir o ultimo administrador"));
+	}
 }

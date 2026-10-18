@@ -271,4 +271,76 @@ public class UsuarioServiceImplTest {
 		assertEquals(TipoUsuario.PROFESSOR, service.alterarPerfil(1, TipoUsuario.PROFESSOR, true, 1).getTipoUsuario());
 		assertEquals(Boolean.FALSE, service.alterarPerfil(2, TipoUsuario.ALUNO, false, 1).getAdm());
 	}
+
+	@Test
+	public void naoRebaixaOUltimoAdministradorMesmoPorOutroAdmin() {
+		Usuario unico = gravado(2, true, TipoUsuario.FUNCIONARIO);
+		when(repository.findAdministradoresParaAtualizacao()).thenReturn(Arrays.asList(unico));
+		when(repository.findById(2)).thenReturn(Optional.of(unico));
+
+		assertThrows(br.com.fateczs.seazs.service.PerfilInvalidoException.class,
+				() -> service.alterarPerfil(2, TipoUsuario.ALUNO, false, 1));
+		verify(repository, never()).save(any());
+		verify(refreshTokenRepository, never()).deleteByIdUsuario(any());
+	}
+
+	@Test
+	public void rebaixaAdministradorQuandoRestaOutro() {
+		Usuario alvo = gravado(2, true, TipoUsuario.FUNCIONARIO);
+		when(repository.findAdministradoresParaAtualizacao()).thenReturn(Arrays.asList(gravado(1, true, TipoUsuario.FUNCIONARIO), alvo));
+		when(repository.findById(2)).thenReturn(Optional.of(alvo));
+		when(repository.save(alvo)).thenReturn(alvo);
+
+		assertEquals(Boolean.FALSE, service.alterarPerfil(2, TipoUsuario.ALUNO, false, 1).getAdm());
+	}
+
+	@Test
+	public void alterarPerfilRevogaOsRefreshTokensDoUsuario() {
+		Usuario u = gravado(5, false, TipoUsuario.ALUNO);
+		when(repository.findById(5)).thenReturn(Optional.of(u));
+		when(repository.save(u)).thenReturn(u);
+
+		service.alterarPerfil(5, TipoUsuario.PROFESSOR, false, 1);
+
+		verify(refreshTokenRepository).deleteByIdUsuario(5);
+	}
+
+	@Test
+	public void alterarRevogaOsRefreshTokensPorqueASenhaMudou() {
+		Usuario entidade = new Usuario();
+		entidade.setId(5);
+		entidade.setSenha("nova");
+
+		service.alterar(entidade);
+
+		verify(refreshTokenRepository).deleteByIdUsuario(5);
+	}
+
+	@Test
+	public void naoExcluiOUltimoAdministrador() {
+		Usuario unico = gravado(1, true, TipoUsuario.FUNCIONARIO);
+		when(repository.findAdministradoresParaAtualizacao()).thenReturn(Arrays.asList(unico));
+		Usuario pedido = new Usuario();
+		pedido.setId(1);
+
+		assertThrows(br.com.fateczs.seazs.service.PerfilInvalidoException.class, () -> service.excluir(pedido));
+		verify(repository, never()).delete(any(Usuario.class));
+		verify(refreshTokenRepository, never()).deleteByIdUsuario(any());
+	}
+
+	@Test
+	public void excluiAdministradorQuandoRestaOutroEExcluiNaoAdminLivremente() {
+		when(repository.findAdministradoresParaAtualizacao())
+				.thenReturn(Arrays.asList(gravado(1, true, TipoUsuario.FUNCIONARIO), gravado(2, true, TipoUsuario.FUNCIONARIO)));
+		Usuario admin = new Usuario();
+		admin.setId(1);
+		Usuario comum = new Usuario();
+		comum.setId(9);
+
+		service.excluir(admin);
+		service.excluir(comum);
+
+		verify(repository).delete(admin);
+		verify(repository).delete(comum);
+	}
 }

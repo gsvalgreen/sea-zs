@@ -66,6 +66,19 @@ public class DemaisRepositoriosIntegrationTest extends RepositorioIntegracaoBase
 	}
 
 	@Test
+	public void findAdministradoresParaAtualizacao_devolveSoQuemTemAdm() {
+		Usuario admin = usuario("admin@teste.com");
+		admin.setAdm(true);
+		em.persist(admin);
+		em.flush();
+		em.clear();
+
+		List<Usuario> admins = usuarioRepository.findAdministradoresParaAtualizacao();
+
+		assertEquals(Arrays.asList(admin.getId()), admins.stream().map(Usuario::getId).collect(java.util.stream.Collectors.toList()));
+	}
+
+	@Test
 	public void findByEmail_devolveVazioQuandoEmailNaoExiste() {
 		assertFalse(usuarioRepository.findByEmail("nao-existe@teste.com").isPresent());
 	}

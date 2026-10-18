@@ -74,6 +74,7 @@ public class UsuarioServiceImpl implements UsuarioService {
 	}
 
 	@Override
+	@Transactional
 	public void alterar(Usuario usuario) {
 		// adm e tipoUsuario nao mudam por aqui: preserva o que esta gravado (sem registro, vale o padrao do cadastro).
 		Usuario gravado = usuario.getId() == null ? null : repository.findById(usuario.getId()).orElse(null);
@@ -87,11 +88,17 @@ public class UsuarioServiceImpl implements UsuarioService {
 		// A senha recebida e sempre texto puro (o cliente nunca ve o hash); guarda BCrypt.
 		usuario.setSenha(passwordEncoder.encode(usuario.getSenha()));
 		repository.save(usuario);
+		// A senha foi trocada: sessoes (refresh tokens) abertas com a senha anterior deixam de renovar.
+		if (usuario.getId() != null) {
+			refreshTokenRepository.deleteByIdUsuario(usuario.getId());
+		}
 	}
 
 	@Override
 	@Transactional
 	public void excluir(Usuario usuario) {
+		exigirOutroAdministrador(repository.findAdministradoresParaAtualizacao(), usuario.getId(),
+				"nao e possivel excluir o ultimo administrador");
 		refreshTokenRepository.deleteByIdUsuario(usuario.getId());
 		repository.delete(usuario);
 	}
@@ -105,16 +112,31 @@ public class UsuarioServiceImpl implements UsuarioService {
 	@Override
 	@Transactional
 	public Usuario alterarPerfil(Integer id, TipoUsuario tipoUsuario, boolean adm, Integer idAutor) {
+		// Lock dos administradores antes de qualquer decisao: rebaixamentos/exclusoes concorrentes sao serializados.
+		List<Usuario> administradores = repository.findAdministradoresParaAtualizacao();
 		Usuario usuario = repository.findById(id).orElseThrow(UsuarioNaoEncontradoException::new);
-		if (!adm && Boolean.TRUE.equals(usuario.getAdm()) && id.equals(idAutor)) {
-			throw new PerfilInvalidoException("o administrador nao pode retirar o proprio acesso");
+		if (!adm && Boolean.TRUE.equals(usuario.getAdm())) {
+			if (id.equals(idAutor)) {
+				throw new PerfilInvalidoException("o administrador nao pode retirar o proprio acesso");
+			}
+			exigirOutroAdministrador(administradores, id, "nao e possivel retirar o acesso do ultimo administrador");
 		}
 		usuario.setTipoUsuario(tipoUsuario);
 		usuario.setAdm(adm);
 		Usuario salvo = repository.save(usuario);
+		// Perfil mudou: as sessoes abertas nao renovam mais com o perfil antigo (o JWT ja emitido vale ate expirar).
+		refreshTokenRepository.deleteByIdUsuario(id);
 		// Auditoria simples: so ids e o novo perfil (sem nome, e-mail ou outros dados pessoais).
 		log.info("perfil alterado: usuario={} tipoUsuario={} adm={} por={}", id, tipoUsuario, adm, idAutor);
 		return salvo;
+	}
+
+	/** Se o usuario e administrador, precisa existir outro administrador alem dele; senao recusa (ficaria zero). */
+	private static void exigirOutroAdministrador(List<Usuario> administradores, Integer id, String mensagem) {
+		boolean ehAdmin = id != null && administradores.stream().anyMatch(a -> id.equals(a.getId()));
+		if (ehAdmin && administradores.size() <= 1) {
+			throw new PerfilInvalidoException(mensagem);
+		}
 	}
 
 	@Override

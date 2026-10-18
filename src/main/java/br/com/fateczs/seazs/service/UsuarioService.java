@@ -25,7 +25,9 @@ public interface UsuarioService {
 	 * campos; o chamador ja foi autorizado como ADMIN. Registra em log quem mudou o perfil de quem (so ids).
 	 *
 	 * @throws UsuarioNaoEncontradoException se o id nao existe
-	 * @throws PerfilInvalidoException       se o proprio administrador tentar retirar o seu {@code adm}
+	 * @throws PerfilInvalidoException       se o proprio administrador tentar retirar o seu {@code adm} ou se a
+	 *                                       mudanca deixaria o sistema sem nenhum administrador (revoga tambem os
+	 *                                       refresh tokens do usuario)
 	 */
 	Usuario alterarPerfil(Integer id, TipoUsuario tipoUsuario, boolean adm, Integer idAutor);
 	

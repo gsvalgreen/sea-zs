@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import br.com.fateczs.seazs.service.EmailJaCadastradoException;
+import br.com.fateczs.seazs.service.PerfilInvalidoException;
 
 /**
  * Erros do cadastro em ProblemDetail. Escopo restrito ao {@link UsuarioController}: os demais erros dos endpoints
@@ -24,6 +25,14 @@ public class UsuarioExceptionHandler {
 		ProblemDetail problema = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT,
 				"Não foi possível concluir o cadastro com os dados informados");
 		problema.setTitle("Cadastro não realizado");
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(problema);
+	}
+
+	/** Excluir o ultimo administrador e recusado (409): o sistema nao pode ficar sem quem promova perfis. */
+	@ExceptionHandler(PerfilInvalidoException.class)
+	public ResponseEntity<ProblemDetail> perfilInvalido(PerfilInvalidoException ex) {
+		ProblemDetail problema = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+		problema.setTitle("Operação não realizada");
 		return ResponseEntity.status(HttpStatus.CONFLICT).body(problema);
 	}
 }
