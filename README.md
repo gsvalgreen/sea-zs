@@ -24,13 +24,24 @@ docker compose down           # para (use -v para apagar o volume de dados)
 
 O MySQL fica exposto apenas em `127.0.0.1`. A versão da imagem é controlada por `MYSQL_VERSION` no `.env`.
 
+## Schema e migrações (Flyway)
+
+O schema versionado fica em `src/main/resources/db/migration/` (`V1__baseline.sql` reproduz o que o Hibernate gera para as entidades, no MySQL 8.4). Toda mudança de entidade que altere o schema exige uma nova migração `V<n>__descricao.sql`.
+
+| Ambiente | Variáveis | Comportamento |
+| --- | --- | --- |
+| Local (padrão) | nenhuma | `ddl-auto=update`, Flyway desligado (o Hibernate cria/atualiza as tabelas). |
+| Não local (homologação/produção) | `FLYWAY_ENABLED=true` `DDL_AUTO=validate` `SHOW_SQL=false` | Flyway aplica as migrações e o Hibernate apenas valida; a aplicação não sobe se uma entidade divergir do schema. |
+
+Banco vazio: a `V1` é executada. Banco que já existe (criado antes pelo Hibernate, sem histórico do Flyway): `baseline-on-migrate` marca a versão 1 como baseline sem executá-la, e só as migrações seguintes rodam. Não misture os modos no mesmo banco após adotar o Flyway: com `FLYWAY_ENABLED=true` use sempre `DDL_AUTO=validate`.
+
 ## Testes e cobertura
 
 ```bash
 ./gradlew test jacocoTestReport jacocoTestCoverageVerification
 ```
 
-O relatório fica em `build/reports/jacoco/test/`. O build falha se a cobertura ficar abaixo do limiar definido em `build.gradle` (instruções 90%, branches 70%). O teste `contextLoads` precisa do MySQL do `docker compose` ativo.
+O relatório fica em `build/reports/jacoco/test/`. O build falha se a cobertura ficar abaixo do limiar definido em `build.gradle` (instruções 90%, branches 70%). Os `featureTest` (inclusive o `contextLoads`) sobem seu próprio MySQL 8.4 via Testcontainers com Flyway ligado e `ddl-auto=validate`, o que prova que `V1__baseline.sql` casa com as entidades; exigem Docker.
 
 ## CI (GitHub Actions)
 

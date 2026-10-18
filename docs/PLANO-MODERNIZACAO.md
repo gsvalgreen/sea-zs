@@ -99,7 +99,7 @@ Resultado esperado: stack em Java 25 + Boot 4.x (via 3.5.x), autenticação com 
 3. Boot 3.5.x: `jakarta.*` (OpenRewrite ou sed), starter validation, `getOne`, geradores de ID, dialeto, Gradle 8.x.
 4. Java 25 + Gradle 9.x; `.sdkmanrc`/toolchain.
 5. Boot 4.x (guia oficial; atenção a Jackson 3 e módulos de teste).
-6. Flyway com `ddl-auto=validate` nos ambientes não locais; Testcontainers no featureTest.
+6. Flyway com `ddl-auto=validate` nos ambientes não locais; Testcontainers no featureTest. (Feito: `V1__baseline.sql`, `FLYWAY_ENABLED`/`DDL_AUTO`, featureTest com Flyway + `validate`.)
 
 ### Fase 2, segurança
 - `spring-boot-starter-security`, `DelegatingPasswordEncoder` (BCrypt), `UserDetailsService` por e-mail.
