@@ -14,7 +14,7 @@ public class PapelServiceImpl implements PapelService {
 
 	@Override
 	public Papel buscar(Papel papel) {
-		return repository.getOne(papel.getId());
+		return repository.getReferenceById(papel.getId());
 	}
 
 	@Override

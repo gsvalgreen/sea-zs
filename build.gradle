@@ -1,10 +1,15 @@
 plugins {
-    id 'org.springframework.boot' version '2.1.6.RELEASE'
+    id 'org.springframework.boot' version '4.1.1'
 }
 apply plugin: 'java'
-apply plugin: 'maven'
 apply plugin: 'io.spring.dependency-management'
 apply plugin: 'jacoco'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
 
 group = 'br.com.fateczs'
 version = '0.0.1-SNAPSHOT'
@@ -17,46 +22,110 @@ tasks.withType(JavaCompile) {
 
 
 
+// Bumps pontuais sobre o BOM do Boot 4.1.1 (advisories do OSV):
+//  - Tomcat 11.0.24 -> 11.0.27: GHSA-9xv2-5v5q-p794, GHSA-gcx9-497g-6cp6, GHSA-h3x4-894j-xpx5 (corrigidos em 11.0.25);
+//  - Jackson 3 (tools.jackson) 3.1.5 -> 3.1.7: GHSA-cxp5-3px4-pw24, GHSA-wv8q-qhhj-9h54 e outros (corrigidos em 3.1.6 e 3.1.7).
+// Remover quando o BOM do Boot ja trouxer versoes >= estas.
+ext['tomcat.version'] = '11.0.27'
+ext['jackson-bom.version'] = '3.1.7'
+
+configurations {
+    mockitoAgent
+}
+
 repositories {
 
-    maven { url "https://repo.maven.apache.org/maven2" }
+    maven { url = "https://repo.maven.apache.org/maven2" }
 }
 dependencies {
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa', version:'2.0.3.RELEASE'
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-thymeleaf', version:'2.0.3.RELEASE'
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-web', version:'2.0.3.RELEASE'
-    compile group: 'org.springframework.boot', name: 'spring-boot-starter-actuator', version:'2.0.3.RELEASE'
-    compile group: 'org.codehaus.groovy', name: 'groovy', version:'2.4.13'
-    runtime group: 'org.springframework.boot', name: 'spring-boot-devtools', version:'2.0.3.RELEASE'
-    runtime group: 'mysql', name: 'mysql-connector-java', version:'5.1.46'
-    testCompile group: 'org.springframework.boot', name: 'spring-boot-starter-test', version:'2.0.3.RELEASE'
+    // Versoes gerenciadas pelo BOM do Boot (4.1.x: Spring Framework 7, Hibernate 7.4, Jackson 3, Tomcat 11, H2 2.4, JUnit Jupiter 6, Mockito 5.23, Testcontainers 2.0).
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    // Migracoes de schema: Boot 4 modularizou o Flyway (autoconfig no starter); o suporte ao MySQL 8 e modulo a parte. Versoes do BOM.
+    implementation 'org.springframework.boot:spring-boot-starter-flyway'
+    runtimeOnly 'org.flywaydb:flyway-mysql'
+    developmentOnly 'org.springframework.boot:spring-boot-devtools'
+    // Driver oficial do MySQL 8 (artefato com.mysql:mysql-connector-j, versao do BOM do Boot).
+    runtimeOnly 'com.mysql:mysql-connector-j'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    // Boot 4 modularizou os testes: @DataJpaTest e @WebMvcTest/@AutoConfigureMockMvc vem de starters de teste proprios.
+    testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    // integration: banco em memoria (versao gerenciada pelo BOM do Boot)
+    testRuntimeOnly 'com.h2database:h2'
+    // featureTest: MySQL 8 real via Docker (extensao JUnit 5 do Testcontainers)
+    testImplementation 'org.testcontainers:testcontainers-mysql'
+    testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+    // Agente do Mockito (recomendado no JDK 21+): carregado via -javaagent em vez de auto-attach dinamico.
+    // commons-compress (transitiva do Testcontainers): o 2.0.x ja traz 1.28.0, entao o constraint anterior foi removido.
+    mockitoAgent('org.mockito:mockito-core') { transitive = false }
+}
+
+// Camadas da piramide de testes, separadas por pacote em src/test (unit, integration, featureTest).
+// `test` roda apenas unit; `integrationTest` e `featureTest` rodam as demais camadas; `check` roda as tres.
+test {
+    useJUnitPlatform()
+    exclude '**/integration/**'
+    exclude '**/featureTest/**'
+}
+
+task integrationTest(type: Test) {
+    group = 'verification'
+    description = 'Testes de integracao (H2, @DataJpaTest, @WebMvcTest)'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform()
+    include '**/integration/**'
+    shouldRunAfter test
+}
+
+task featureTest(type: Test) {
+    group = 'verification'
+    description = 'Testes de fluxo completo com Testcontainers (exigem Docker; sem Docker sao pulados, exceto com CI=true)'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform()
+    include '**/featureTest/**'
+    shouldRunAfter integrationTest
+}
+
+check.dependsOn integrationTest, featureTest
+
+// JDK 21+ avisa quando o Mockito/ByteBuddy carrega o agente dinamicamente; carregar o agente do Mockito via -javaagent nas tres camadas
+// (sem -XX:+EnableDynamicAgentLoading). O provider resolve a configuracao so na execucao.
+[test, integrationTest, featureTest].each { t ->
+    t.jvmArgumentProviders.add({ ["-javaagent:${configurations.mockitoAgent.asPath}".toString()] } as CommandLineArgumentProvider)
+}
+
+// Evita que um .exec antigo (de execucao anterior) entre na cobertura combinada.
+// A extensao do JaCoCo e lida na configuracao (acessar Task.extensions na execucao e depreciado no Gradle 9).
+def arquivosExecJacoco = [test, integrationTest, featureTest].collect { t ->
+    def arquivoExec = t.extensions.getByType(JacocoTaskExtension).destinationFile
+    t.doFirst { delete arquivoExec }
+    arquivoExec
 }
 
 jacoco {
-    toolVersion = '0.8.5'
+    toolVersion = '0.8.15'
 }
 
 jacocoTestReport {
     reports {
-        xml.enabled true
-        html.enabled true
-        csv.enabled false
+        xml.required = true
+        html.required = true
+        csv.required = false
     }
 }
 
 // ---------------------------------------------------------------------------
 // Qualidade/CI (mantido isolado; usado por .github/workflows/ci.yml)
 // ---------------------------------------------------------------------------
-// Compativel com Gradle 4.5. Ao migrar o Gradle/Boot/Java, revisar:
-//  - Sonar NAO usa o plugin Gradle: o scanner atual exige JVM 17 e o Gradle 4.5
-//    roda so em JDK <= 8 (testado: plugin 2.7.1 falha com "class file version 61").
-//    O CI usa SonarSource/sonarqube-scan-action + sonar-project.properties.
-//    Apos migrar para Gradle 7+/JDK 17 da para trocar por `id 'org.sonarqube'`
-//    e remover sonar-project.properties e o passo do scan-action;
-//  - jacoco toolVersion: 0.8.5 nao le classes Java 17+ (usar >= 0.8.11);
-//  - sintaxe: `xml.enabled`/`html.enabled` viram `xml.required`/`html.required`
-//    (Gradle 7+); `sonar.coverage.jacoco.xmlReportPaths` permanece;
-//  - setup-java do CI e a versao do JDK no workflow (hoje 8, ver .sdkmanrc);
+// Gradle 9.8 / JDK 25 / jacoco 0.8.15. Pendencias para as proximas etapas do plano:
+//  - Sonar segue via SonarSource/sonarqube-scan-action + sonar-project.properties: o plugin `org.sonarqube` exigiria
+//    expor SONAR_TOKEN ao passo de build (que executa codigo do PR) ou duplicar o gate; o scan-action roda em passo separado;
 //  - revisar os limiares abaixo se a cobertura mudar.
 // Limiar = cobertura medida em 2026-10 (instrucoes 94,5%; branches 75,5%),
 // levemente abaixo. Medida sem o contextLoads (sem MySQL); no CI ele roda.
@@ -77,6 +146,18 @@ jacocoTestCoverageVerification {
     }
 }
 test.finalizedBy jacocoTestReport
-// Gradle 4.5 nao liga jacocoTestCoverageVerification ao `check` automaticamente.
+// Explicito para garantir o gate no `check` (e ordenado depois das tres camadas abaixo).
 check.dependsOn jacocoTestCoverageVerification
 jacocoTestCoverageVerification.mustRunAfter jacocoTestReport
+
+// Cobertura combinada das tres camadas (test + integrationTest + featureTest).
+// Sem isso o relatorio e o gate considerariam apenas os testes unitarios.
+// Com `build`/`check` o relatorio roda de novo apos as tres camadas (check.dependsOn abaixo);
+// `.exec` ausente (ex.: featureTest pulado sem Docker) e ignorado pelo filtro `exists`.
+def execucoesJacoco = files({
+    arquivosExecJacoco.findAll { it.exists() }
+})
+jacocoTestReport.executionData.setFrom(execucoesJacoco)
+jacocoTestCoverageVerification.executionData.setFrom(execucoesJacoco)
+[jacocoTestReport, jacocoTestCoverageVerification].each { it.mustRunAfter integrationTest, featureTest }
+check.dependsOn jacocoTestReport

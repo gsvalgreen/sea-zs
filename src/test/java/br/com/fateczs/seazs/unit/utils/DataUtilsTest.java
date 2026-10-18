@@ -1,12 +1,15 @@
 package br.com.fateczs.seazs.unit.utils;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import br.com.fateczs.seazs.utils.DataUtils;
 
@@ -54,6 +57,20 @@ public class DataUtilsTest {
 	@Test
 	public void getDataAtualUsaFusoSaoPaulo() {
 		assertEquals(DataUtils.TIME_ZONE, dataUtils.getDataAtual().getTimeZone());
+	}
+
+	@Test
+	public void getDataAtualUsaORelogioInjetado() {
+		Instant instante = Instant.parse("2019-08-01T02:59:59Z");
+		DataUtils fixo = new DataUtils(Clock.fixed(instante, ZoneId.of("UTC")));
+
+		Calendar atual = fixo.getDataAtual();
+
+		assertEquals(instante.toEpochMilli(), atual.getTimeInMillis());
+		assertEquals(DataUtils.TIME_ZONE, atual.getTimeZone());
+		// 23:59:59 de 31/07 em Sao Paulo, mesmo com o Clock em UTC
+		assertEquals(Calendar.JULY, atual.get(Calendar.MONTH));
+		assertEquals(Integer.valueOf(1), fixo.verificaSemestre(atual));
 	}
 
 	@Test

@@ -1,23 +1,23 @@
 package br.com.fateczs.seazs.unit.service;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import br.com.fateczs.seazs.model.Usuario;
 import br.com.fateczs.seazs.repository.UsuarioRepository;
 import br.com.fateczs.seazs.service.serviceImpl.UsuarioServiceImpl;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class UsuarioServiceImplTest {
 
 	@Mock
@@ -31,7 +31,7 @@ public class UsuarioServiceImplTest {
 		Usuario entidade = new Usuario();
 		entidade.setId(7);
 		Usuario esperado = new Usuario();
-		when(repository.getOne(7)).thenReturn(esperado);
+		when(repository.getReferenceById(7)).thenReturn(esperado);
 
 		assertEquals(esperado, service.buscar(entidade));
 	}
@@ -82,7 +82,7 @@ public class UsuarioServiceImplTest {
 		entrada.setEmail("a@b.com");
 		entrada.setSenha("errada");
 
-		org.junit.Assert.assertNull(service.validarLogin(entrada));
+		org.junit.jupiter.api.Assertions.assertNull(service.validarLogin(entrada));
 	}
 
 	@Test
@@ -92,7 +92,7 @@ public class UsuarioServiceImplTest {
 		Usuario persistido = new Usuario();
 		persistido.setNome("Ana");
 		persistido.setTipoUsuario(br.com.fateczs.seazs.utils.TipoUsuario.ALUNO);
-		when(repository.getOne(3)).thenReturn(persistido);
+		when(repository.getReferenceById(3)).thenReturn(persistido);
 
 		br.com.fateczs.seazs.model.CrachaUsuario cracha = service.emitirCracha(entrada);
 

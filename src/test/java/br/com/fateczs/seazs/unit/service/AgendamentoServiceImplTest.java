@@ -1,6 +1,6 @@
 package br.com.fateczs.seazs.unit.service;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -9,12 +9,12 @@ import static org.mockito.Mockito.when;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
 
 import br.com.fateczs.seazs.model.Agendamento;
@@ -22,7 +22,7 @@ import br.com.fateczs.seazs.model.Evento;
 import br.com.fateczs.seazs.repository.AgendamentoRepository;
 import br.com.fateczs.seazs.service.serviceImpl.AgendamentoServiceImpl;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class AgendamentoServiceImplTest {
 
 	@Mock
@@ -36,7 +36,7 @@ public class AgendamentoServiceImplTest {
 		Agendamento entrada = new Agendamento();
 		entrada.setId(2);
 		Agendamento esperado = new Agendamento();
-		when(repository.getOne(2)).thenReturn(esperado);
+		when(repository.getReferenceById(2)).thenReturn(esperado);
 		assertEquals(esperado, service.buscar(entrada));
 	}
 

@@ -18,7 +18,7 @@ public class AtividadeServiceImpl implements AtividadeService {
 	@Override
 	public Atividade buscar(Atividade atividade) {
 		// TODO Auto-generated method stub
-		return repository.getOne(atividade.getId());
+		return repository.getReferenceById(atividade.getId());
 	}
 
 	@Override
@@ -57,7 +57,7 @@ public class AtividadeServiceImpl implements AtividadeService {
 	}
 	
 	private Sort sortByInicioAsc() {
-		return new Sort(Sort.Direction.ASC, "inicioAtividade");
+		return Sort.by(Sort.Direction.ASC, "inicioAtividade");
 	}
 	
 	@Override

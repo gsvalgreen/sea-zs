@@ -18,7 +18,7 @@ public class DisciplinaServiceImpl implements DisciplinaService {
 	@Override
 	public Disciplina buscar(Disciplina disciplina) {
 		// TODO Auto-generated method stub
-		return repository.getOne(disciplina.getId());
+		return repository.getReferenceById(disciplina.getId());
 	}
 
 	@Override

@@ -19,7 +19,7 @@ public class EventoServiceImpl implements EventoService {
 	@Override
 	public Evento buscar(Evento evento) {
 		// TODO Auto-generated method stub
-		return repository.getOne(evento.getId());
+		return repository.getReferenceById(evento.getId());
 	}
 
 	@Override
@@ -58,7 +58,7 @@ public class EventoServiceImpl implements EventoService {
 	}
 	
 	private Sort sortByInicioAsc() {
-		return new Sort(Sort.Direction.ASC, "inicio");
+		return Sort.by(Sort.Direction.ASC, "inicio");
 	}
 
 }

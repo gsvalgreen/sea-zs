@@ -20,7 +20,7 @@ public class UsuarioServiceImpl implements UsuarioService {
 	@Override
 	public Usuario buscar(Usuario usuario) {
 		// TODO Auto-generated method stub
-		return repository.getOne(usuario.getId());
+		return repository.getReferenceById(usuario.getId());
 	}
 
 	@Override
@@ -57,7 +57,7 @@ public class UsuarioServiceImpl implements UsuarioService {
 
 	@Override
 	public CrachaUsuario emitirCracha(Usuario usuario) {
-		usuario = repository.getOne(usuario.getId());
+		usuario = repository.getReferenceById(usuario.getId());
 		CrachaUsuarioMapper crachaUsuarioMapper = new CrachaUsuarioMapper();
 		return crachaUsuarioMapper.createFrom(usuario);
 	}

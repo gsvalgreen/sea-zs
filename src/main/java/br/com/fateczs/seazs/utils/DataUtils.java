@@ -1,5 +1,6 @@
 package br.com.fateczs.seazs.utils;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Calendar;
@@ -9,8 +10,18 @@ import java.util.TimeZone;
 public class DataUtils {
 
 	public static final TimeZone TIME_ZONE = TimeZone.getTimeZone("America/Sao_Paulo");
+	private final Clock clock;
 	private Calendar operacao;
 	private Date retorno;
+
+	/** Usa o relogio do sistema no fuso {@link #TIME_ZONE}. */
+	public DataUtils() {
+		this(Clock.system(TIME_ZONE.toZoneId()));
+	}
+
+	public DataUtils(Clock clock) {
+		this.clock = clock;
+	}
 	
 	public Date somaMinutos(Date data, int minutos) {
 		operacao = Calendar.getInstance(TIME_ZONE);
@@ -35,6 +46,7 @@ public class DataUtils {
 	
 	public Calendar getDataAtual () {
 		operacao = Calendar.getInstance(TIME_ZONE);
+		operacao.setTimeInMillis(clock.millis());
 		return operacao;
 	}
 

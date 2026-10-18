@@ -1,0 +1,14 @@
+# Atualizacoes semanais via PR (sem auto-merge; revisao humana obrigatoria).
+# Em github-actions, o Dependabot tambem atualiza referencias fixadas por SHA.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

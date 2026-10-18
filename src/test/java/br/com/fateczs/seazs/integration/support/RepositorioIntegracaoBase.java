@@ -1,0 +1,20 @@
+package br.com.fateczs.seazs.integration.support;
+
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
+import org.springframework.test.context.ActiveProfiles;
+
+/**
+ * Base dos testes de repositorio: H2 em memoria no modo MySQL (perfil "integration").
+ *
+ * Divergencias H2 x MySQL a ter em mente (nao cobertas aqui, ver featureTest):
+ * - comparacao de strings: o MySQL e case-insensitive por padrao, o H2 nao (afeta getByEmailAndSenha);
+ * - geracao de ID: "native" vira SEQUENCE no H2 e AUTO_INCREMENT no MySQL (nunca assumir valores de ID);
+ * - agregacoes: SUM devolve BigDecimal no MySQL e BigInteger/Long no H2 (o Spring converte para Integer);
+ * - nomes de tabela: o MySQL em Linux e case-sensitive para tabelas, o H2 nao.
+ */
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@ActiveProfiles("integration")
+public abstract class RepositorioIntegracaoBase {
+}

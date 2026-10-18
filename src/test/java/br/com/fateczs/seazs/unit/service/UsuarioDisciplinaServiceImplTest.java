@@ -1,6 +1,6 @@
 package br.com.fateczs.seazs.unit.service;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -8,11 +8,11 @@ import static org.mockito.Mockito.when;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import br.com.fateczs.seazs.model.Usuario;
 import br.com.fateczs.seazs.model.UsuarioDisciplina;
@@ -20,7 +20,7 @@ import br.com.fateczs.seazs.model.UsuarioDisciplinaID;
 import br.com.fateczs.seazs.repository.UsuarioDisciplinaRepository;
 import br.com.fateczs.seazs.service.serviceImpl.UsuarioDisciplinaServiceImpl;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class UsuarioDisciplinaServiceImplTest {
 
 	@Mock
@@ -35,7 +35,7 @@ public class UsuarioDisciplinaServiceImplTest {
 		UsuarioDisciplina entrada = new UsuarioDisciplina();
 		entrada.setIdUsuarioDisciplina(id);
 		UsuarioDisciplina esperado = new UsuarioDisciplina();
-		when(repository.getOne(id)).thenReturn(esperado);
+		when(repository.getReferenceById(id)).thenReturn(esperado);
 		assertEquals(esperado, service.buscar(entrada));
 	}
 

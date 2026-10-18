@@ -19,7 +19,7 @@ public class UsuarioDisciplinaServiceImpl implements UsuarioDisciplinaService {
 	@Override
 	public UsuarioDisciplina buscar(UsuarioDisciplina usuarioDisciplina) {
 		// TODO Auto-generated method stub
-		return repository.getOne(usuarioDisciplina.getIdUsuarioDisciplina());
+		return repository.getReferenceById(usuarioDisciplina.getIdUsuarioDisciplina());
 	}
 
 	@Override

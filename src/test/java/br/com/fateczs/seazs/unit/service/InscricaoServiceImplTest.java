@@ -1,28 +1,34 @@
 package br.com.fateczs.seazs.unit.service;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import br.com.fateczs.seazs.model.Atividade;
 import br.com.fateczs.seazs.model.Inscricao;
@@ -30,7 +36,7 @@ import br.com.fateczs.seazs.model.Usuario;
 import br.com.fateczs.seazs.repository.InscricaoRepository;
 import br.com.fateczs.seazs.service.serviceImpl.InscricaoServiceImpl;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class InscricaoServiceImplTest {
 
 	private static final long MINUTO = 60 * 1000L;
@@ -41,8 +47,22 @@ public class InscricaoServiceImplTest {
 	@InjectMocks
 	private InscricaoServiceImpl service;
 
+	private static final ZoneId SP = ZoneId.of("America/Sao_Paulo");
+
+	/** Instante fixo (meio do ano, primeiro semestre) para tornar as janelas deterministicas. */
+	private static final Instant AGORA = Instant.parse("2019-03-15T15:00:00Z");
+
+	@BeforeEach
+	public void fixaRelogio() {
+		fixaRelogio(AGORA);
+	}
+
+	private void fixaRelogio(Instant instante) {
+		ReflectionTestUtils.setField(service, "clock", Clock.fixed(instante, SP));
+	}
+
 	private Date emMinutos(long minutos) {
-		return new Date(System.currentTimeMillis() + minutos * MINUTO);
+		return new Date(AGORA.toEpochMilli() + minutos * MINUTO);
 	}
 
 	private Inscricao requisicao() {
@@ -63,7 +83,7 @@ public class InscricaoServiceImplTest {
 		inscricao.setCheckIn(checkIn);
 		inscricao.setCheckOut(checkOut);
 		inscricao.setPontuacaoRecebida(0);
-		when(repository.getOne(1)).thenReturn(inscricao);
+		when(repository.getReferenceById(1)).thenReturn(inscricao);
 		return inscricao;
 	}
 
@@ -74,14 +94,15 @@ public class InscricaoServiceImplTest {
 		inscricao.getAtividade().setFlagCumulativa(cumulativa);
 		inscricao.getAtividade().setQtdCheckIn(qtdCheckIn);
 		inscricao.setPontuacaoRecebida(pontosJaRecebidos);
-		when(repository.save(inscricao)).thenReturn(inscricao);
+		// lenient: nem todo cenario chega a salvar (fora da janela/limite); MockitoExtension e estrito por teste.
+		lenient().when(repository.save(inscricao)).thenReturn(inscricao);
 		return inscricao;
 	}
 
 	@Test
 	public void buscarUsaSequencialDaInscricao() {
 		Inscricao esperado = new Inscricao();
-		when(repository.getOne(1)).thenReturn(esperado);
+		when(repository.getReferenceById(1)).thenReturn(esperado);
 		assertEquals(esperado, service.buscar(requisicao()));
 	}
 
@@ -94,7 +115,7 @@ public class InscricaoServiceImplTest {
 
 		service.inserir(inscricao);
 
-		assertNotNull(inscricao.getDtInscricao());
+		assertEquals(AGORA.toEpochMilli(), inscricao.getDtInscricao().getTime());
 		assertFalse(inscricao.getCheckIn());
 		assertFalse(inscricao.getCheckOut());
 		assertEquals(Integer.valueOf(0), inscricao.getPontuacaoRecebida());
@@ -167,12 +188,76 @@ public class InscricaoServiceImplTest {
 		ArgumentCaptor<Calendar> ini = ArgumentCaptor.forClass(Calendar.class);
 		ArgumentCaptor<Calendar> fim = ArgumentCaptor.forClass(Calendar.class);
 		verify(repository).somaPontuacaoRecebidaNoSemestre(eq(3), ini.capture(), fim.capture());
-		boolean primeiroSemestre = Calendar.getInstance().get(Calendar.MONTH) <= 6;
-		assertEquals(primeiroSemestre ? Calendar.JANUARY : Calendar.AUGUST, ini.getValue().get(Calendar.MONTH));
-		assertEquals(primeiroSemestre ? Calendar.JULY : Calendar.DECEMBER, fim.getValue().get(Calendar.MONTH));
+		assertEquals(Calendar.JANUARY, ini.getValue().get(Calendar.MONTH));
+		assertEquals(Calendar.JULY, fim.getValue().get(Calendar.MONTH));
+	}
+
+	private void verificaIntervaloDoSemestre(String instante, int ano, int mesIni, int diaIni, int mesFim, int diaFim) {
+		fixaRelogio(Instant.parse(instante));
+		Usuario usuario = new Usuario();
+		usuario.setId(3);
+		service.somaTotalDePontosNoSemestre(usuario);
+
+		ArgumentCaptor<Calendar> ini = ArgumentCaptor.forClass(Calendar.class);
+		ArgumentCaptor<Calendar> fim = ArgumentCaptor.forClass(Calendar.class);
+		verify(repository).somaPontuacaoRecebidaNoSemestre(eq(3), ini.capture(), fim.capture());
+		assertEquals(ano, ini.getValue().get(Calendar.YEAR));
+		assertEquals(mesIni, ini.getValue().get(Calendar.MONTH));
+		assertEquals(diaIni, ini.getValue().get(Calendar.DAY_OF_MONTH));
+		assertEquals(ano, fim.getValue().get(Calendar.YEAR));
+		assertEquals(mesFim, fim.getValue().get(Calendar.MONTH));
+		assertEquals(diaFim, fim.getValue().get(Calendar.DAY_OF_MONTH));
+	}
+
+	@Test
+	public void semestre1ComecaEmJaneiroEmQualquerDiaDoSemestre() {
+		// 01/01 00:00 em Sao Paulo
+		verificaIntervaloDoSemestre("2019-01-01T02:00:00Z", 2019, Calendar.JANUARY, 1, Calendar.JULY, 31);
+	}
+
+	@Test
+	public void semestre1UltimoInstanteEm31DeJulho() {
+		// 31/07 23:59:59 em Sao Paulo (UTC-3)
+		verificaIntervaloDoSemestre("2019-08-01T02:59:59Z", 2019, Calendar.JANUARY, 1, Calendar.JULY, 31);
+	}
+
+	@Test
+	public void semestre2ComecaEm1DeAgostoMeiaNoiteDeSaoPaulo() {
+		// 01/08 00:00 em Sao Paulo
+		verificaIntervaloDoSemestre("2019-08-01T03:00:00Z", 2019, Calendar.AUGUST, 1, Calendar.DECEMBER, 31);
+	}
+
+	@Test
+	public void semestre2UltimoInstanteEm31DeDezembro() {
+		// 31/12 23:59:59 em Sao Paulo
+		verificaIntervaloDoSemestre("2020-01-01T02:59:59Z", 2019, Calendar.AUGUST, 1, Calendar.DECEMBER, 31);
 	}
 
 	// ---- validaPresenca: atividade não contínua ----
+
+	@Test
+	public void checkInNoLimiteInferiorDaJanelaNaoRegistra() {
+		// inicio = agora + 10min => inicioEntrada == agora (limite exclusivo)
+		persistida(10, 120, false, false);
+
+		assertFalse(service.validaPresenca(requisicao()).getCheckIn());
+		verify(repository, never()).save(any(Inscricao.class));
+	}
+
+	@Test
+	public void checkInUmMinutoDepoisDoLimiteInferiorRegistra() {
+		persistida(9, 120, false, false);
+
+		assertTrue(service.validaPresenca(requisicao()).getCheckIn());
+	}
+
+	@Test
+	public void checkInNoLimiteSuperiorDaJanelaNaoRegistra() {
+		// inicio = agora - 30min => fimEntrada == agora (limite exclusivo)
+		persistida(-30, 120, false, false);
+
+		assertFalse(service.validaPresenca(requisicao()).getCheckIn());
+	}
 
 	@Test
 	public void checkInDentroDaJanelaDeEntrada() {

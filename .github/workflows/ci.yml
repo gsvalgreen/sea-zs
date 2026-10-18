@@ -19,7 +19,7 @@ jobs:
     timeout-minutes: 20
     services:
       mysql:
-        image: mysql:5.7
+        image: mysql:8.4
         env:
           MYSQL_ROOT_PASSWORD: system
           MYSQL_DATABASE: seazs
@@ -39,13 +39,12 @@ jobs:
           # Sonar precisa do historico completo para blame/novo codigo.
           fetch-depth: 0
 
-      # Java 8 (igual ao .sdkmanrc; Gradle 4.5 nao roda em JDK mais novo).
-      # Ao migrar para Java 17/25, ajustar java-version manualmente.
+      # Java 25 (Spring Boot 4.1.x; igual ao .sdkmanrc e ao toolchain do build.gradle; o wrapper e o Gradle 9.8).
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '8'
-          # gradle/actions/setup-gradle nao suporta Gradle 4.5; cache via setup-java.
+          java-version: '25'
+          # cache via setup-java (o wrapper baixa o Gradle 9.8.1).
           cache: gradle
 
       - name: Build, testes e cobertura (JaCoCo)
@@ -54,10 +53,9 @@ jobs:
         # falha abaixo do limiar. O SONAR_TOKEN nao e exposto a este passo.
         run: ./gradlew build --no-daemon
         env:
-          # useSSL=false: driver 5.1.46 + MySQL 5.7 sem TLS 1.0/1.1 no JDK 8 recente.
-          SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/seazs?useSSL=false
-          SPRING_DATASOURCE_USERNAME: root
-          SPRING_DATASOURCE_PASSWORD: system
+          DB_URL: jdbc:mysql://127.0.0.1:3306/seazs
+          DB_USER: root
+          DB_PASSWORD: system
 
       # Detecta se o Sonar pode rodar, sem imprimir o secret. Em PR de fork o
       # secret chega vazio. O token so e injetado neste passo e no scan.

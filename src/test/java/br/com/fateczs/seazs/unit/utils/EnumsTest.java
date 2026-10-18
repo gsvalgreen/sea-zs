@@ -1,9 +1,10 @@
 package br.com.fateczs.seazs.unit.utils;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import br.com.fateczs.seazs.utils.ModalidadeCurso;
 import br.com.fateczs.seazs.utils.TipoUsuario;
@@ -25,9 +26,9 @@ public class EnumsTest {
 		assertNull(TipoUsuario.getTipoUsuario(null));
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void tipoUsuarioInexistenteLancaExcecao() {
-		TipoUsuario.getTipoUsuario(99);
+		assertThrows(IllegalArgumentException.class, () -> TipoUsuario.getTipoUsuario(99));
 	}
 
 	@Test
@@ -43,9 +44,9 @@ public class EnumsTest {
 		assertNull(ModalidadeCurso.getModalidadeCurso(null));
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void modalidadeCursoInexistenteLancaExcecao() {
-		ModalidadeCurso.getModalidadeCurso(99);
+		assertThrows(IllegalArgumentException.class, () -> ModalidadeCurso.getModalidadeCurso(99));
 	}
 
 	@Test
@@ -61,8 +62,8 @@ public class EnumsTest {
 		assertNull(Turno.getTurno(null));
 	}
 
-	@Test(expected = IllegalArgumentException.class)
+	@Test
 	public void turnoInexistenteLancaExcecao() {
-		Turno.getTurno('X');
+		assertThrows(IllegalArgumentException.class, () -> Turno.getTurno('X'));
 	}
 }

@@ -1,5 +1,6 @@
 package br.com.fateczs.seazs.service.serviceImpl;
 
+import java.time.Clock;
 import java.util.Date;
 import java.util.List;
 
@@ -22,21 +23,26 @@ public class StaffAgendamentoServiceImpl implements StaffAgendamentoService {
 	private static final Logger log = LoggerFactory.getLogger(StaffAgendamentoServiceImpl.class);
 	
 	private Sort sortByDtInscricaoAsc() {
-		return new Sort(Sort.Direction.ASC, "dtInscricao");
+		return Sort.by(Sort.Direction.ASC, "dtInscricao");
 	}
 	
 	private Sort sortByDtInicioAgendamentoAsc() {
-		return new Sort(Sort.Direction.ASC, "agendamento.inicio");
+		return Sort.by(Sort.Direction.ASC, "agendamento.inicio");
 	}
 	
-	private DataUtils operaData = new DataUtils(); 
+	@Autowired
+	private Clock clock;
+
+	private DataUtils operaData() {
+		return new DataUtils(clock);
+	}
 
 	@Autowired
 	private StaffAgendamentoRepository repository;
 
 	@Override
 	public StaffAgendamento buscar(StaffAgendamento staff) {
-		return repository.getOne(staff.getSequencialStaff());
+		return repository.getReferenceById(staff.getSequencialStaff());
 	}
 
 	@Override
@@ -68,7 +74,8 @@ public class StaffAgendamentoServiceImpl implements StaffAgendamentoService {
 	public StaffAgendamento validarPresencaStaff(StaffAgendamento staff) {
 		staff = repository.findByAgendamentoIdAndUsuarioId(staff.getAgendamento().getId(), staff.getUsuario().getId());
 		
-		Date agora = new Date();
+		DataUtils operaData = operaData();
+		Date agora = new Date(clock.millis());
 		Date inicioEntrada = operaData.somaMinutos(staff.getAgendamento().getInicio(), -10);
 		Date fimSaida = operaData.somaMinutos(staff.getAgendamento().getFim(), 30);
 		

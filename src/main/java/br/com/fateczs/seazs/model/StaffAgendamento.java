@@ -2,9 +2,8 @@ package br.com.fateczs.seazs.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.GenericGenerator;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.Date;
 
 
@@ -16,11 +15,7 @@ uniqueConstraints = @UniqueConstraint(columnNames = {"id_agendamento", "id_usuar
 public class StaffAgendamento {
 	
 	@Id
-	@GeneratedValue(strategy = GenerationType.AUTO, generator="native")
-	@GenericGenerator(
-			name = "native",
-			strategy = "native"
-			)
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "sq_staff")
 	private Integer sequencialStaff;
 	

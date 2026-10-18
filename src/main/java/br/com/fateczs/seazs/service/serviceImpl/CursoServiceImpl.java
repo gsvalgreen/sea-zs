@@ -18,7 +18,7 @@ public class CursoServiceImpl implements CursoService {
 	@Override
 	public Curso buscar(Curso curso) {
 		// TODO Auto-generated method stub
-		return repository.getOne(curso.getId());
+		return repository.getReferenceById(curso.getId());
 	}
 
 	@Override

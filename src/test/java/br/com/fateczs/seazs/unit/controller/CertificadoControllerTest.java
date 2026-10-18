@@ -1,6 +1,6 @@
 package br.com.fateczs.seazs.unit.controller;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -9,14 +9,14 @@ import br.com.fateczs.seazs.model.CertificadoStaff;
 import br.com.fateczs.seazs.model.Inscricao;
 import br.com.fateczs.seazs.model.StaffAgendamento;
 import br.com.fateczs.seazs.service.CertificadoService;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import br.com.fateczs.seazs.controller.CertificadoController;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class CertificadoControllerTest {
 
 	@Mock

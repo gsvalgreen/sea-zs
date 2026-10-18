@@ -1,9 +1,9 @@
 package br.com.fateczs.seazs.unit.service;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -11,16 +11,21 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import br.com.fateczs.seazs.model.Agendamento;
 import br.com.fateczs.seazs.model.StaffAgendamento;
@@ -28,7 +33,7 @@ import br.com.fateczs.seazs.model.Usuario;
 import br.com.fateczs.seazs.repository.StaffAgendamentoRepository;
 import br.com.fateczs.seazs.service.serviceImpl.StaffAgendamentoServiceImpl;
 
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class StaffAgendamentoServiceImplTest {
 
 	private static final long MINUTO = 60 * 1000L;
@@ -38,6 +43,13 @@ public class StaffAgendamentoServiceImplTest {
 
 	@InjectMocks
 	private StaffAgendamentoServiceImpl service;
+
+	private static final Instant AGORA = Instant.parse("2019-03-15T15:00:00Z");
+
+	@BeforeEach
+	public void fixaRelogio() {
+		ReflectionTestUtils.setField(service, "clock", Clock.fixed(AGORA, ZoneId.of("America/Sao_Paulo")));
+	}
 
 	private StaffAgendamento requisicao() {
 		Agendamento agendamento = new Agendamento();
@@ -51,7 +63,7 @@ public class StaffAgendamentoServiceImplTest {
 	}
 
 	private StaffAgendamento persistido(long inicioOffsetMin, long fimOffsetMin) {
-		long agora = System.currentTimeMillis();
+		long agora = AGORA.toEpochMilli();
 		Agendamento agendamento = new Agendamento();
 		agendamento.setInicio(new Date(agora + inicioOffsetMin * MINUTO));
 		agendamento.setFim(new Date(agora + fimOffsetMin * MINUTO));
@@ -69,7 +81,7 @@ public class StaffAgendamentoServiceImplTest {
 		StaffAgendamento entrada = new StaffAgendamento();
 		entrada.setSequencialStaff(11);
 		StaffAgendamento esperado = new StaffAgendamento();
-		when(repository.getOne(11)).thenReturn(esperado);
+		when(repository.getReferenceById(11)).thenReturn(esperado);
 		assertEquals(esperado, service.buscar(entrada));
 	}
 
