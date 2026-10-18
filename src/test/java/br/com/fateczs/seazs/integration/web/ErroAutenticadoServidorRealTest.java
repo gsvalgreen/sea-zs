@@ -1,6 +1,7 @@
 package br.com.fateczs.seazs.integration.web;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -56,5 +57,23 @@ public class ErroAutenticadoServidorRealTest {
 		assertEquals(400, postar("/papel/inserir", "{json quebrado", token));
 		assertEquals(401, postar("/papel/inserir", "{json quebrado", null));
 		assertEquals(200, postar("/evento/listar", "", token));
+	}
+
+	@Test
+	public void erro500_naoVazaTraceNemMensagemInterna() throws Exception {
+		br.com.fateczs.seazs.model.Usuario u = DadosTeste.usuario("erro500-" + System.nanoTime() + "@teste.com");
+		String token = tokens.emitir(usuarios.save(u)).valor();
+
+		HttpResponse<String> resposta = HttpClient.newHttpClient().send(
+				HttpRequest.newBuilder(URI.create("http://localhost:" + porta + "/api/v1/teste/erro-interno"))
+						.header("Accept", "application/json").header("Authorization", "Bearer " + token).GET().build(),
+				HttpResponse.BodyHandlers.ofString());
+
+		assertEquals(500, resposta.statusCode());
+		String corpo = resposta.body();
+		for (String proibido : new String[] { "trace", "segredo-interno", "for update", "tb_refresh_token",
+				"IllegalStateException", "br.com.fateczs" }) {
+			assertFalse(corpo.contains(proibido), "a resposta 500 vazou '" + proibido + "': " + corpo);
+		}
 	}
 }

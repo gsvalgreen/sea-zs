@@ -69,6 +69,7 @@ public class SegurancaUnitTest {
 		Usuario u = new Usuario();
 		u.setId(3);
 		u.setEmail("ana@teste.com");
+		u.setNome("Ana Souza");
 		u.setSenha(senha);
 		u.setTipoUsuario(TipoUsuario.PROFESSOR);
 		u.setAdm(false);
@@ -230,10 +231,22 @@ public class SegurancaUnitTest {
 		assertEquals("3", jwt.getSubject());
 		assertEquals("seazs", jwt.getClaimAsString("iss"));
 		assertEquals(List.of("ROLE_PROFESSOR"), jwt.getClaimAsStringList("roles"));
+		assertEquals("Ana Souza", jwt.getClaimAsString("name"));
 		assertEquals("HS256", jwt.getHeaders().get("alg"));
 		assertEquals(Duration.ofMinutes(15), Duration.between(jwt.getIssuedAt(), jwt.getExpiresAt()));
 		assertFalse(jwt.getClaims().containsKey("email"));
 		assertFalse(jwt.getClaims().containsKey("senha"));
+	}
+
+	@Test
+	public void accessTokenDeUsuarioSemNome_naoTemClaimNameENaoFalha() {
+		JwtProperties p = props(SEGREDO);
+		Usuario semNome = usuario("x");
+		semNome.setNome(null);
+
+		Jwt jwt = new JwtConfig().jwtDecoder(p).decode(servico(Instant.now(), p).emitir(semNome).valor());
+
+		assertFalse(jwt.getClaims().containsKey("name"));
 	}
 
 	@Test

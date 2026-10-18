@@ -242,6 +242,16 @@ public class AuthSegurancaWebMvcTest {
 	}
 
 	@Test
+	public void respostaComOrigemPermitida_expoeRetryAfterSemCuringa() throws Exception {
+		when(authService.login(any(LoginRequest.class))).thenThrow(new BadCredentialsException("x"));
+
+		mvc.perform(post("/api/v1/auth/login").header("Origin", "http://localhost:4200")
+				.contentType(MediaType.APPLICATION_JSON).content(LOGIN))
+				.andExpect(status().isUnauthorized())
+				.andExpect(header().string("Access-Control-Expose-Headers", "Retry-After"));
+	}
+
+	@Test
 	public void preflight_emRotaProtegida_naoExigeToken() throws Exception {
 		mvc.perform(options("/api/v1/teste/quem-sou-eu").header("Origin", "http://localhost:4200")
 				.header("Access-Control-Request-Method", "GET")

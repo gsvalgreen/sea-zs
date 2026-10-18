@@ -13,12 +13,15 @@ import org.springframework.stereotype.Service;
 
 import br.com.fateczs.seazs.model.Usuario;
 
-/** Emite o access token (JWT HS256, vida curta). Claims minimos: sub (id), iss, iat, exp, jti e roles. */
+/** Emite o access token (JWT HS256, vida curta). Claims: sub (id), iss, iat, exp, jti, roles e name (so o nome, que a tela ja exibe; sem e-mail). */
 @Service
 public class JwtTokenService {
 
 	/** Nome do claim com as authorities (lido por {@link SecurityConfig}). */
 	public static final String CLAIM_ROLES = "roles";
+
+	/** Nome de exibicao do usuario (claim padrao OIDC). Vale ate o token expirar, como as roles. */
+	public static final String CLAIM_NAME = "name";
 
 	private final JwtEncoder encoder;
 	private final JwtProperties props;
@@ -33,14 +36,17 @@ public class JwtTokenService {
 	public AccessToken emitir(Usuario usuario) {
 		Instant agora = clock.instant();
 		Instant expira = agora.plus(props.accessTtl());
-		JwtClaimsSet claims = JwtClaimsSet.builder()
+		JwtClaimsSet.Builder builder = JwtClaimsSet.builder()
 				.issuer(props.issuer())
 				.subject(String.valueOf(usuario.getId()))
 				.issuedAt(agora)
 				.expiresAt(expira)
 				.id(UUID.randomUUID().toString())
-				.claim(CLAIM_ROLES, Autoridades.de(usuario))
-				.build();
+				.claim(CLAIM_ROLES, Autoridades.de(usuario));
+		if (usuario.getNome() != null) {
+			builder.claim(CLAIM_NAME, usuario.getNome());
+		}
+		JwtClaimsSet claims = builder.build();
 		JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();
 		String valor = encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
 		return new AccessToken(valor, props.accessTtl().getSeconds());

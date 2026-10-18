@@ -79,6 +79,8 @@ public class SecurityConfig {
 		config.setAllowedOrigins(origens);
 		config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 		config.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));
+		// Sem isto o JS do navegador nao le o Retry-After do 429 (so os headers "simples" ficam visiveis em CORS).
+		config.setExposedHeaders(Arrays.asList("Retry-After"));
 		config.setAllowCredentials(false); // Bearer no header; nao ha cookies
 		config.setMaxAge(3600L);
 		UrlBasedCorsConfigurationSource fonte = new UrlBasedCorsConfigurationSource();
