@@ -62,12 +62,12 @@ public class ModelExtrasTest {
 		assertEquals(new Curso(), new Curso());
 	}
 
+	/** Usuario compara por id (ver UsuarioModelTest para os demais cenarios): os outros campos nao entram. */
 	@Test
 	public void usuarioEqualsEHashCode() {
 		Usuario a = new Usuario();
 		Usuario b = new Usuario();
-		assertEquals(a, b);
-		assertEquals(a.hashCode(), b.hashCode());
+		assertNotEquals(a, b); // transitorios (sem id) so sao iguais a si mesmos
 		assertTrue(a.equals(a));
 		assertFalse(a.equals(null));
 		assertFalse(a.equals("x"));
@@ -75,20 +75,13 @@ public class ModelExtrasTest {
 		assertNotEquals(a, b);
 		b.setId(1);
 		assertEquals(a, b);
-		a.setEmail("a@a");
-		assertNotEquals(a, b);
-		b.setEmail("a@a");
-		a.setNome("n");
-		assertNotEquals(a, b);
-		b.setNome("n");
-		a.setMatricula("m");
-		assertNotEquals(a, b);
-		b.setMatricula("m");
-		a.setCurso(new Curso("1"));
-		assertNotEquals(a, b);
-		b.setCurso(new Curso("1"));
-		assertEquals(a, b);
 		assertEquals(a.hashCode(), b.hashCode());
+		a.setEmail("a@a");
+		a.setNome("n");
+		a.setCurso(new Curso("1"));
+		assertEquals(a, b);
+		b.setId(2);
+		assertNotEquals(a, b);
 	}
 
 	@Test
