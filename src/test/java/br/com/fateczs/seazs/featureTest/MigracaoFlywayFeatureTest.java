@@ -30,14 +30,14 @@ public class MigracaoFlywayFeatureTest extends FeatureTestBase {
 				Statement st = c.createStatement()) {
 			st.execute("create database " + BANCO + " default character set utf8mb4 collate utf8mb4_unicode_ci");
 		}
-		String url = mysqlContainer().getJdbcUrl().replace("/seazs", "/" + BANCO);
+		String url = "jdbc:mysql://" + mysqlContainer().getHost() + ":" + mysqlContainer().getMappedPort(3306) + "/" + BANCO;
 
 		// 1) Hibernate cria o schema (comportamento do dev local atual), Flyway desligado.
 		iniciar(url, "spring.flyway.enabled=false", "spring.jpa.hibernate.ddl-auto=update").close();
 
 		// 2) Ambiente nao local sobre o mesmo banco: Flyway + validate.
 		try (ConfigurableApplicationContext ctx = iniciar(url, "spring.flyway.enabled=true",
-				"spring.jpa.hibernate.ddl-auto=validate")) {
+				"spring.flyway.baseline-on-migrate=true", "spring.jpa.hibernate.ddl-auto=validate")) {
 			try (Connection c = DriverManager.getConnection(url, "root", "system");
 					Statement st = c.createStatement();
 					ResultSet rs = st.executeQuery(

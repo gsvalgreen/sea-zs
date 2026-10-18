@@ -31,9 +31,11 @@ O schema versionado fica em `src/main/resources/db/migration/` (`V1__baseline.sq
 | Ambiente | Variáveis | Comportamento |
 | --- | --- | --- |
 | Local (padrão) | nenhuma | `ddl-auto=update`, Flyway desligado (o Hibernate cria/atualiza as tabelas). |
-| Não local (homologação/produção) | `FLYWAY_ENABLED=true` `DDL_AUTO=validate` `SHOW_SQL=false` | Flyway aplica as migrações e o Hibernate apenas valida; a aplicação não sobe se uma entidade divergir do schema. |
+| Não local (homologação/produção) | `FLYWAY_ENABLED=true` `DDL_AUTO=validate` `SHOW_SQL=false` | Flyway aplica as migrações e o Hibernate apenas valida; o Hibernate só confere a existência e o tipo de tabelas e colunas (não confere NOT NULL, FKs, UNIQUE, defaults nem tamanho de varchar). |
 
-Banco vazio: a `V1` é executada. Banco que já existe (criado antes pelo Hibernate, sem histórico do Flyway): `baseline-on-migrate` marca a versão 1 como baseline sem executá-la, e só as migrações seguintes rodam. Não misture os modos no mesmo banco após adotar o Flyway: com `FLYWAY_ENABLED=true` use sempre `DDL_AUTO=validate`.
+Banco vazio: a `V1` é executada. Banco legado (criado antes pelo Hibernate, sem histórico do Flyway): só é adotado com `FLYWAY_BASELINE_ON_MIGRATE=true` (padrão `false`, use apenas no primeiro deploy e desligue depois). A `V1` é marcada como aplicada sem ser executada nem comparada ao banco; se ele divergir, o Flyway não avisa. **Antes de ligar o Flyway num banco legado, ele precisa estar idêntico ao baseline** (`turno` varchar(1), collation `utf8mb4_unicode_ci`, nomes das FKs, etc.) ou receber uma `V2` corretiva/`ALTER` manual. Não misture os modos no mesmo banco após adotar o Flyway: com `FLYWAY_ENABLED=true` use sempre `DDL_AUTO=validate`.
+
+Credenciais: `root`/`system` servem só para o dev local. Em ambientes reais a aplicação deve usar um usuário com privilégios mínimos (DML: SELECT/INSERT/UPDATE/DELETE) e as migrações devem rodar com um usuário DDL separado (`spring.flyway.user` e `spring.flyway.password`, via variáveis de ambiente), nunca root. A `V1` não contém `DROP`, `create schema`, `GRANT` nem dados.
 
 ## Testes e cobertura
 
@@ -41,7 +43,7 @@ Banco vazio: a `V1` é executada. Banco que já existe (criado antes pelo Hibern
 ./gradlew test jacocoTestReport jacocoTestCoverageVerification
 ```
 
-O relatório fica em `build/reports/jacoco/test/`. O build falha se a cobertura ficar abaixo do limiar definido em `build.gradle` (instruções 90%, branches 70%). Os `featureTest` (inclusive o `contextLoads`) sobem seu próprio MySQL 8.4 via Testcontainers com Flyway ligado e `ddl-auto=validate`, o que prova que `V1__baseline.sql` casa com as entidades; exigem Docker.
+O relatório fica em `build/reports/jacoco/test/`. O build falha se a cobertura ficar abaixo do limiar definido em `build.gradle` (instruções 90%, branches 70%). Os `featureTest` (inclusive o `contextLoads`) sobem seu próprio MySQL 8.4 via Testcontainers com Flyway ligado e `ddl-auto=validate`, o que confere que tabelas e colunas das entidades existem na `V1__baseline.sql` com tipo compatível (não confere NOT NULL, FKs, UNIQUE, defaults nem tamanho de varchar); exigem Docker.
 
 ## CI (GitHub Actions)
 
