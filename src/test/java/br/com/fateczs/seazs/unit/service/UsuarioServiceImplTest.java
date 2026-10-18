@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,6 +22,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import br.com.fateczs.seazs.model.Curso;
 import br.com.fateczs.seazs.model.Usuario;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -28,6 +30,7 @@ import br.com.fateczs.seazs.repository.RefreshTokenRepository;
 import br.com.fateczs.seazs.repository.UsuarioRepository;
 import br.com.fateczs.seazs.service.serviceImpl.UsuarioServiceImpl;
 import br.com.fateczs.seazs.utils.TipoUsuario;
+import br.com.fateczs.seazs.utils.Turno;
 
 @ExtendWith(MockitoExtension.class)
 public class UsuarioServiceImplTest {
@@ -107,6 +110,18 @@ public class UsuarioServiceImplTest {
 		entidade.setNome("Novo Nome");
 		entidade.setEmail("novo@x.com");
 		entidade.setSenha("nova");
+		entidade.setEndereco("Rua Nova, 10");
+		entidade.setCelular("11999990000");
+		Date dataNasc = new Date(1000000000L);
+		entidade.setDataNasc(dataNasc);
+		entidade.setSemestre(4);
+		entidade.setTurno(Turno.NOITE);
+		entidade.setRg("12.345.678-9");
+		entidade.setGenero("F");
+		entidade.setMatricula("2016001");
+		Curso curso = new Curso();
+		curso.setId(3);
+		entidade.setCurso(curso);
 		entidade.setAdm(false);
 		entidade.setTipoUsuario(TipoUsuario.ALUNO);
 
@@ -121,6 +136,15 @@ public class UsuarioServiceImplTest {
 		assertEquals("Novo Nome", gravado.getNome());
 		assertEquals("novo@x.com", gravado.getEmail());
 		assertEquals("{bcrypt}NOVO", gravado.getSenha());
+		assertEquals("Rua Nova, 10", gravado.getEndereco());
+		assertEquals("11999990000", gravado.getCelular());
+		assertEquals(dataNasc, gravado.getDataNasc());
+		assertEquals(Integer.valueOf(4), gravado.getSemestre());
+		assertEquals(Turno.NOITE, gravado.getTurno());
+		assertEquals("12.345.678-9", gravado.getRg());
+		assertEquals("F", gravado.getGenero());
+		assertEquals("2016001", gravado.getMatricula());
+		assertSame(curso, gravado.getCurso());
 		verify(refreshTokenRepository).deleteByIdUsuario(5);
 	}
 
