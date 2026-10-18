@@ -7,15 +7,15 @@ import java.util.TimeZone;
 
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
+import tools.jackson.databind.cfg.DateTimeFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import br.com.fateczs.seazs.model.Evento;
 
 /**
- * Caracteriza o formato de data devolvido pela API (Jackson do Boot 3.5, que mantem o formato do Boot 2.7,
- * com spring.jackson.time-zone=America/Sao_Paulo), para detectar mudanca silenciosa
- * na migracao para o Boot 4 (Jackson 3). Usa um ObjectMapper montado a mao: protege contra
+ * Caracteriza o formato de data devolvido pela API (Jackson 3 do Boot 4, que mantem o formato do Boot 2.7/3.5,
+ * com spring.jackson.time-zone=America/Sao_Paulo), para detectar mudanca silenciosa.
+ * Usa um JsonMapper montado a mao: protege contra
  * mudanca no Jackson ou na entidade, mas NAO valida a propriedade
  * spring.jackson.time-zone do application.properties.
  */
@@ -24,10 +24,11 @@ public class DataJsonFormatoTest {
 	// 2024-03-01T13:00:00Z == 10:00 em America/Sao_Paulo (-03:00)
 	private static final long INSTANTE = 1709298000000L;
 
-	private ObjectMapper mapperComoNoBoot() {
-		return new ObjectMapper()
-				.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
-				.setTimeZone(TimeZone.getTimeZone("America/Sao_Paulo"));
+	private JsonMapper mapperComoNoBoot() {
+		return JsonMapper.builder()
+				.disable(DateTimeFeature.WRITE_DATES_AS_TIMESTAMPS)
+				.defaultTimeZone(TimeZone.getTimeZone("America/Sao_Paulo"))
+				.build();
 	}
 
 	@Test

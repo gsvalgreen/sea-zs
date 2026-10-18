@@ -18,7 +18,7 @@ import java.util.TimeZone;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -33,7 +33,7 @@ import br.com.fateczs.seazs.service.UsuarioService;
  * (Jackson do Boot, validacao, propriedades do application.properties) e o service mockado.
  *
  * Observacao de migracao: a partir do Boot 3.4 usa-se {@code @MockitoBean} no lugar de {@code @MockBean}.
- * No Boot 4, {@code @WebMvcTest} muda para o pacote {@code org.springframework.boot.webmvc.test.autoconfigure}.
+ * No Boot 4, {@code @WebMvcTest} vive no pacote {@code org.springframework.boot.webmvc.test.autoconfigure}.
  */
 @WebMvcTest(UsuarioController.class)
 public class UsuarioControllerWebMvcTest {
@@ -100,7 +100,7 @@ public class UsuarioControllerWebMvcTest {
 				.andExpect(jsonPath("$.curso").doesNotExist());
 	}
 
-	/** Protege `spring.jackson.time-zone` do application.properties: datas saem em America/Sao_Paulo (-03:00; Jackson 2.11+ serializa o offset com dois-pontos, antes era -0300). */
+	/** Protege `spring.jackson.time-zone` do application.properties: datas saem em America/Sao_Paulo (-03:00 com dois-pontos; igual ao Boot 2.7/3.5 e ao Jackson 3). */
 	@Test
 	public void login_serializaDatasComoStringIsoNoFusoDeSaoPaulo() throws Exception {
 		Usuario u = usuarioCompleto();

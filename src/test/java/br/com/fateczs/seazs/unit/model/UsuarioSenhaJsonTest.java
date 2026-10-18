@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import br.com.fateczs.seazs.model.Agendamento;
 import br.com.fateczs.seazs.model.Inscricao;
@@ -16,7 +16,7 @@ public class UsuarioSenhaJsonTest {
 
 	private static final String SEGREDO = "segredo-123";
 
-	private final ObjectMapper mapper = new ObjectMapper();
+	private final JsonMapper mapper = JsonMapper.builder().build();
 
 	private Usuario usuarioComSenha() {
 		Usuario u = new Usuario();

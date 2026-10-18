@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.ApplicationContextInitializer;
@@ -19,7 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.DockerClientFactory;
-import org.testcontainers.containers.MySQLContainer;
+import org.testcontainers.mysql.MySQLContainer;
 
 import com.jayway.jsonpath.JsonPath;
 
@@ -47,7 +47,7 @@ public abstract class FeatureTestBase {
 	protected static final long HORA = 60 * MINUTO;
 	protected static final long DIA = 24 * HORA;
 
-	private static MySQLContainer<?> mysql;
+	private static MySQLContainer mysql;
 
 	@Autowired
 	protected MockMvc mvc;
@@ -65,7 +65,7 @@ public abstract class FeatureTestBase {
 
 	private static synchronized void iniciarMySql() {
 		if (mysql == null) {
-			mysql = new MySQLContainer<>("mysql:8.4")
+			mysql = new MySQLContainer("mysql:8.4")
 					.withDatabaseName("seazs")
 					.withUsername("root")
 					.withPassword("system")
