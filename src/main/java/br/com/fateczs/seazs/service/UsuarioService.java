@@ -17,8 +17,6 @@ public interface UsuarioService {
 	
 	List<Usuario> listar();
 	
-	Usuario validarLogin(Usuario usuario);
-
 	CrachaUsuario emitirCracha(Usuario usuario);
 	
 }

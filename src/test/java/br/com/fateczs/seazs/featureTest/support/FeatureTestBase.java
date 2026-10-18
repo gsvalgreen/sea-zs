@@ -87,7 +87,9 @@ public abstract class FeatureTestBase {
 					"spring.datasource.password=" + mysql.getPassword(),
 					// Schema vem da migracao V1 e o Hibernate apenas valida: falha se uma entidade divergir do SQL.
 					"spring.flyway.enabled=true",
-					"spring.jpa.hibernate.ddl-auto=validate").applyTo(context);
+					"spring.jpa.hibernate.ddl-auto=validate",
+					// Segredo JWT so de teste (em producao vem de JWT_SECRET; sem ele a aplicacao nao sobe).
+					"app.jwt.secret=segredo-somente-para-testes-0123456789").applyTo(context);
 		}
 	}
 

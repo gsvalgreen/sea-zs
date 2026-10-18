@@ -21,6 +21,7 @@ import br.com.fateczs.seazs.controller.AgendamentoController;
 import br.com.fateczs.seazs.controller.CertificadoController;
 import br.com.fateczs.seazs.controller.EventoController;
 import br.com.fateczs.seazs.controller.InscricaoController;
+import br.com.fateczs.seazs.integration.support.ComSeguranca;
 import br.com.fateczs.seazs.integration.support.DadosTeste;
 import br.com.fateczs.seazs.model.Agendamento;
 import br.com.fateczs.seazs.model.Atividade;
@@ -41,6 +42,7 @@ import br.com.fateczs.seazs.service.InscricaoService;
  */
 @WebMvcTest({ EventoController.class, AgendamentoController.class, InscricaoController.class,
 		CertificadoController.class })
+@ComSeguranca
 public class EntidadesAninhadasWebMvcTest {
 
 	@Autowired

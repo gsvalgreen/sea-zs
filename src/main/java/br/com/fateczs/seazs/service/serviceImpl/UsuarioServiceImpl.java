@@ -5,9 +5,12 @@ import java.util.List;
 import br.com.fateczs.seazs.model.CrachaUsuario;
 import br.com.fateczs.seazs.model.mapper.CrachaUsuarioMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import br.com.fateczs.seazs.model.Usuario;
+import br.com.fateczs.seazs.repository.RefreshTokenRepository;
 import br.com.fateczs.seazs.repository.UsuarioRepository;
 import br.com.fateczs.seazs.service.UsuarioService;
 
@@ -17,6 +20,12 @@ public class UsuarioServiceImpl implements UsuarioService {
 	@Autowired
 	private UsuarioRepository repository;
 
+	@Autowired
+	private RefreshTokenRepository refreshTokenRepository;
+
+	@Autowired
+	private PasswordEncoder passwordEncoder;
+
 	@Override
 	public Usuario buscar(Usuario usuario) {
 		// TODO Auto-generated method stub
@@ -25,19 +34,21 @@ public class UsuarioServiceImpl implements UsuarioService {
 
 	@Override
 	public void inserir(Usuario usuario) {
-		// TODO Auto-generated method stub
+		usuario.setSenha(passwordEncoder.encode(usuario.getSenha()));
 		repository.save(usuario);
 	}
 
 	@Override
 	public void alterar(Usuario usuario) {
-		// TODO Auto-generated method stub
+		// A senha recebida e sempre texto puro (o cliente nunca ve o hash); guarda BCrypt.
+		usuario.setSenha(passwordEncoder.encode(usuario.getSenha()));
 		repository.save(usuario);
 	}
 
 	@Override
+	@Transactional
 	public void excluir(Usuario usuario) {
-		// TODO Auto-generated method stub
+		refreshTokenRepository.deleteByIdUsuario(usuario.getId());
 		repository.delete(usuario);
 	}
 
@@ -45,14 +56,6 @@ public class UsuarioServiceImpl implements UsuarioService {
 	public List<Usuario> listar() {
 		// TODO Auto-generated method stub
 		return repository.findAll();
-	}
-
-	@Override
-	public Usuario validarLogin(Usuario usuario) {
-		// TODO Auto-generated method stub
-		String email = usuario.getEmail();
-		String senha = usuario.getSenha();
-		return repository.getByEmailAndSenha(email, senha);
 	}
 
 	@Override

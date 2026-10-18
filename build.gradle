@@ -47,6 +47,9 @@ dependencies {
     // Migracoes de schema: Boot 4 modularizou o Flyway (autoconfig no starter); o suporte ao MySQL 8 e modulo a parte. Versoes do BOM.
     implementation 'org.springframework.boot:spring-boot-starter-flyway'
     runtimeOnly 'org.flywaydb:flyway-mysql'
+    // Seguranca (Fase 2): Spring Security 7 + resource server JWT (Nimbus JOSE vem transitivo; versoes do BOM).
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     // Driver oficial do MySQL 8 (artefato com.mysql:mysql-connector-j, versao do BOM do Boot).
     runtimeOnly 'com.mysql:mysql-connector-j'
@@ -54,6 +57,7 @@ dependencies {
     // Boot 4 modularizou os testes: @DataJpaTest e @WebMvcTest/@AutoConfigureMockMvc vem de starters de teste proprios.
     testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-security-test'
     // integration: banco em memoria (versao gerenciada pelo BOM do Boot)
     testRuntimeOnly 'com.h2database:h2'
     // featureTest: MySQL 8 real via Docker (extensao JUnit 5 do Testcontainers)

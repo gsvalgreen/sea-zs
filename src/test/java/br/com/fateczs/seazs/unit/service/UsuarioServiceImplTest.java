@@ -1,6 +1,9 @@
 package br.com.fateczs.seazs.unit.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -9,11 +12,15 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import br.com.fateczs.seazs.model.Usuario;
+import org.springframework.security.crypto.password.PasswordEncoder;
+
+import br.com.fateczs.seazs.repository.RefreshTokenRepository;
 import br.com.fateczs.seazs.repository.UsuarioRepository;
 import br.com.fateczs.seazs.service.serviceImpl.UsuarioServiceImpl;
 
@@ -22,6 +29,10 @@ public class UsuarioServiceImplTest {
 
 	@Mock
 	private UsuarioRepository repository;
+	@Mock
+	private RefreshTokenRepository refreshTokenRepository;
+	@Mock
+	private PasswordEncoder passwordEncoder;
 
 	@InjectMocks
 	private UsuarioServiceImpl service;
@@ -37,23 +48,47 @@ public class UsuarioServiceImplTest {
 	}
 
 	@Test
-	public void inserirSalva() {
+	public void inserirGuardaSenhaCodificadaENuncaOTextoPuro() {
 		Usuario entidade = new Usuario();
+		entidade.setSenha("Segredo123");
+		when(passwordEncoder.encode("Segredo123")).thenReturn("{bcrypt}HASH");
+
 		service.inserir(entidade);
-		verify(repository).save(entidade);
+
+		ArgumentCaptor<Usuario> salvo = ArgumentCaptor.forClass(Usuario.class);
+		verify(repository).save(salvo.capture());
+		assertEquals("{bcrypt}HASH", salvo.getValue().getSenha());
 	}
 
 	@Test
-	public void alterarSalva() {
+	public void inserirComSenhaAcimaDoLimiteDoBcryptPropagaAExcecaoDoEncoderSemPersistir() {
 		Usuario entidade = new Usuario();
+		entidade.setSenha("x");
+		when(passwordEncoder.encode("x")).thenThrow(new IllegalArgumentException("password cannot be more than 72 bytes"));
+
+		assertThrows(IllegalArgumentException.class, () -> service.inserir(entidade));
+
+		verify(repository, never()).save(any());
+	}
+
+	@Test
+	public void alterarGuardaSenhaCodificada() {
+		Usuario entidade = new Usuario();
+		entidade.setSenha("nova");
+		when(passwordEncoder.encode("nova")).thenReturn("{bcrypt}NOVO");
+
 		service.alterar(entidade);
+
 		verify(repository).save(entidade);
+		assertEquals("{bcrypt}NOVO", entidade.getSenha());
 	}
 
 	@Test
-	public void excluirRemove() {
+	public void excluirRemoveOsRefreshTokensEOUsuario() {
 		Usuario entidade = new Usuario();
+		entidade.setId(9);
 		service.excluir(entidade);
+		verify(refreshTokenRepository).deleteByIdUsuario(9);
 		verify(repository).delete(entidade);
 	}
 
@@ -63,26 +98,6 @@ public class UsuarioServiceImplTest {
 		when(repository.findAll()).thenReturn(todos);
 
 		assertEquals(todos, service.listar());
-	}
-
-	@Test
-	public void validarLoginBuscaPorEmailESenha() {
-		Usuario entrada = new Usuario();
-		entrada.setEmail("a@b.com");
-		entrada.setSenha("123");
-		Usuario encontrado = new Usuario();
-		when(repository.getByEmailAndSenha("a@b.com", "123")).thenReturn(encontrado);
-
-		assertEquals(encontrado, service.validarLogin(entrada));
-	}
-
-	@Test
-	public void validarLoginRetornaNuloQuandoCredenciaisInvalidas() {
-		Usuario entrada = new Usuario();
-		entrada.setEmail("a@b.com");
-		entrada.setSenha("errada");
-
-		org.junit.jupiter.api.Assertions.assertNull(service.validarLogin(entrada));
 	}
 
 	@Test

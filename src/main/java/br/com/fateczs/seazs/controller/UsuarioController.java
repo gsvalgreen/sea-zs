@@ -6,7 +6,6 @@ import jakarta.validation.Valid;
 
 import br.com.fateczs.seazs.model.CrachaUsuario;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,6 +13,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.fateczs.seazs.model.Usuario;
+import br.com.fateczs.seazs.model.dto.LoginLegadoResponse;
+import br.com.fateczs.seazs.service.AuthService;
 import br.com.fateczs.seazs.service.UsuarioService;
 
 @RestController
@@ -50,11 +51,17 @@ public class UsuarioController {
 		return usuServ.listar();
 	}
 	
-	@CrossOrigin(origins = "http://localhost:4200")
+	/**
+	 * Login legado, mantido temporariamente para o front atual: mesmo JSON de antes (sem a senha) mais o campo
+	 * {@code token} (access token). Credenciais invalidas seguem respondendo 200 com corpo vazio.
+	 *
+	 * @deprecated use {@code POST /api/v1/auth/login} (401 padronizado, refresh token e DTOs proprios).
+	 */
+	@Deprecated
 	@PostMapping("/login")
 	@ResponseBody
-	public Usuario loginUsuario(@RequestBody Usuario usuario){
-		return usuServ.validarLogin(usuario);
+	public LoginLegadoResponse loginUsuario(@RequestBody Usuario usuario){
+		return authService.loginLegado(usuario.getEmail(), usuario.getSenha()).orElse(null);
 	}
 
 	@PostMapping("/cracha")
@@ -63,4 +70,7 @@ public class UsuarioController {
 
 	@Autowired
 	private UsuarioService usuServ;
+
+	@Autowired
+	private AuthService authService;
 }
