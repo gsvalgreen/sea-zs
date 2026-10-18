@@ -1,6 +1,8 @@
 package br.com.fateczs.seazs.featureTest;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -23,14 +25,11 @@ import br.com.fateczs.seazs.featureTest.support.FeatureTestBase;
 public class MigracaoFlywayFeatureTest extends FeatureTestBase {
 
 	private static final String BANCO = "seazs_legado";
+	private static final String BANCO_SEM_BASELINE = "seazs_legado_sem_baseline";
 
 	@Test
 	public void bancoCriadoPeloHibernateRecebeBaselineEPassaNoValidate() throws Exception {
-		try (Connection c = DriverManager.getConnection(mysqlContainer().getJdbcUrl(), "root", "system");
-				Statement st = c.createStatement()) {
-			st.execute("create database " + BANCO + " default character set utf8mb4 collate utf8mb4_unicode_ci");
-		}
-		String url = "jdbc:mysql://" + mysqlContainer().getHost() + ":" + mysqlContainer().getMappedPort(3306) + "/" + BANCO;
+		String url = criarBanco(BANCO);
 
 		// 1) Hibernate cria o schema (comportamento do dev local atual), Flyway desligado.
 		iniciar(url, "spring.flyway.enabled=false", "spring.jpa.hibernate.ddl-auto=update").close();
@@ -48,6 +47,33 @@ public class MigracaoFlywayFeatureTest extends FeatureTestBase {
 				assertEquals(true, rs.getBoolean("success"));
 			}
 		}
+	}
+
+	/**
+	 * Trava o padrao baseline-on-migrate=false: banco legado (criado pelo Hibernate, sem historico do Flyway) NAO e
+	 * adotado por acidente; a partida falha com "non-empty schema" ate que se ligue FLYWAY_BASELINE_ON_MIGRATE de forma explicita.
+	 */
+	@Test
+	public void bancoLegadoSemBaselineOnMigrateFalhaNaPartidaComSchemaNaoVazio() throws Exception {
+		String url = criarBanco(BANCO_SEM_BASELINE);
+		iniciar(url, "spring.flyway.enabled=false", "spring.jpa.hibernate.ddl-auto=update").close();
+
+		Exception falha = assertThrows(Exception.class, () -> iniciar(url, "spring.flyway.enabled=true",
+				"spring.flyway.baseline-on-migrate=false", "spring.jpa.hibernate.ddl-auto=validate").close());
+
+		StringBuilder causas = new StringBuilder();
+		for (Throwable t = falha; t != null; t = t.getCause()) {
+			causas.append(t.getMessage()).append('\n');
+		}
+		assertTrue(causas.toString().toLowerCase().contains("non-empty schema"), causas.toString());
+	}
+
+	private static String criarBanco(String nome) throws Exception {
+		try (Connection c = DriverManager.getConnection(mysqlContainer().getJdbcUrl(), "root", "system");
+				Statement st = c.createStatement()) {
+			st.execute("create database " + nome + " default character set utf8mb4 collate utf8mb4_unicode_ci");
+		}
+		return "jdbc:mysql://" + mysqlContainer().getHost() + ":" + mysqlContainer().getMappedPort(3306) + "/" + nome;
 	}
 
 	private static ConfigurableApplicationContext iniciar(String url, String... propriedades) {
