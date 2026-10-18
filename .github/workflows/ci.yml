@@ -53,9 +53,9 @@ jobs:
         # falha abaixo do limiar. O SONAR_TOKEN nao e exposto a este passo.
         run: ./gradlew build --no-daemon
         env:
-          SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/seazs
-          SPRING_DATASOURCE_USERNAME: root
-          SPRING_DATASOURCE_PASSWORD: system
+          DB_URL: jdbc:mysql://127.0.0.1:3306/seazs
+          DB_USER: root
+          DB_PASSWORD: system
 
       # Detecta se o Sonar pode rodar, sem imprimir o secret. Em PR de fork o
       # secret chega vazio. O token so e injetado neste passo e no scan.
