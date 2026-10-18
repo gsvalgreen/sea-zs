@@ -19,6 +19,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import br.com.fateczs.seazs.utils.TipoUsuario;
 import br.com.fateczs.seazs.utils.Turno;
+import br.com.fateczs.seazs.validation.DadosCadastrais;
 import br.com.fateczs.seazs.validation.MaxBytes;
 
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
@@ -43,19 +44,23 @@ public class Usuario {
 	private String senha;
 
 	
+	@NotBlank(groups = DadosCadastrais.class)
 	@Column(name = "nome_usuario", nullable = false)
 	private String nome;
 
 	
+	@NotBlank(groups = DadosCadastrais.class)
 	@Column(name = "endereco_usuario", nullable = false)
 	private String endereco;
 
 	
+	@NotBlank(groups = DadosCadastrais.class)
 	@Column(name = "celular_usuario", nullable = false)
 	private String celular;
 
 	
 	@Temporal(TemporalType.DATE)
+	@NotNull(groups = DadosCadastrais.class)
 	@Column(name = "data_nascimento", nullable = false)
 	private Date dataNasc;
 
@@ -70,10 +75,12 @@ public class Usuario {
 	private Boolean adm;
 
 	
+	@NotBlank(groups = DadosCadastrais.class)
 	@Column(name = "rg_usuario", nullable = false)
 	private String rg;
 
 	
+	@NotBlank(groups = DadosCadastrais.class)
 	@Column(name = "genero_usuario", nullable = false)
 	private String genero;
 

@@ -5,6 +5,7 @@ import java.util.List;
 import br.com.fateczs.seazs.model.CrachaUsuario;
 import br.com.fateczs.seazs.model.mapper.CrachaUsuarioMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -46,9 +47,24 @@ public class UsuarioServiceImpl implements UsuarioService {
 		try {
 			repository.save(usuario);
 		} catch (DataIntegrityViolationException e) {
-			// Unica restricao do cadastro que o cliente pode violar: e-mail duplicado (chave unica).
-			throw new EmailJaCadastradoException(e);
+			// Os campos NOT NULL sao validados na borda (400); a unica restricao UNIQUE da tabela alem da PK
+			// (identity) e a do e-mail. Qualquer outra violacao e inesperada e segue como erro (nao vira 409).
+			if (violouChaveUnica(e)) {
+				throw new EmailJaCadastradoException(e);
+			}
+			throw e;
 		}
+	}
+
+	/** Procura na cadeia de causas uma violacao de restricao UNIQUE reportada pelo Hibernate. */
+	private static boolean violouChaveUnica(Throwable erro) {
+		for (Throwable t = erro; t != null; t = t.getCause() == t ? null : t.getCause()) {
+			if (t instanceof ConstraintViolationException
+					&& ((ConstraintViolationException) t).getKind() == ConstraintViolationException.ConstraintKind.UNIQUE) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	@Override

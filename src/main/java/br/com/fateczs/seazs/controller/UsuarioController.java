@@ -3,9 +3,11 @@ package br.com.fateczs.seazs.controller;
 import java.util.List;
 
 import jakarta.validation.Valid;
+import jakarta.validation.groups.Default;
 
 import br.com.fateczs.seazs.model.CrachaUsuario;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,6 +18,7 @@ import br.com.fateczs.seazs.model.Usuario;
 import br.com.fateczs.seazs.model.dto.LoginLegadoResponse;
 import br.com.fateczs.seazs.service.AuthService;
 import br.com.fateczs.seazs.service.UsuarioService;
+import br.com.fateczs.seazs.validation.DadosCadastrais;
 
 @RestController
 @RequestMapping("/usuario")
@@ -23,7 +26,7 @@ public class UsuarioController {
 	
 	@PostMapping("/inserir")
 	@ResponseBody
-	public void inserirUsuario(@Valid @RequestBody Usuario usuario) {
+	public void inserirUsuario(@Validated({ Default.class, DadosCadastrais.class }) @RequestBody Usuario usuario) {
 		usuServ.inserir(usuario);
 	}
 	
@@ -35,7 +38,7 @@ public class UsuarioController {
 	
 	@PostMapping("/alterar")
 	@ResponseBody
-	public void alterarUsuario(@Valid @RequestBody Usuario usuario) {
+	public void alterarUsuario(@Validated({ Default.class, DadosCadastrais.class }) @RequestBody Usuario usuario) {
 		usuServ.alterar(usuario);
 	}
 	

@@ -263,4 +263,15 @@ public class AutenticacaoSpringBootTest {
 		assertTrue(resposta.contains("Não foi possível concluir o cadastro"));
 		assertTrue(!resposta.contains(email));
 	}
+
+	/** Regressao: campo NOT NULL ausente virava 409 "e-mail ja cadastrado" (catch largo demais); agora e 400 antes do banco. */
+	@Test
+	public void cadastroSemCamposObrigatorios_responde400EnaoConflito() throws Exception {
+		String email = "incompleto-" + UUID.randomUUID() + "@teste.com";
+
+		String resposta = postar("/usuario/inserir", "{\"email\":\"" + email + "\",\"senha\":\"Segredo123\"}", 400);
+
+		assertFalse(resposta.contains("cadastro"));
+		assertTrue(usuarios.findByEmail(email).isEmpty());
+	}
 }

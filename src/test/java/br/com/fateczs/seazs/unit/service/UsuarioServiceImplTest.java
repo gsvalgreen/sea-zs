@@ -3,6 +3,7 @@ package br.com.fateczs.seazs.unit.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -171,6 +172,13 @@ public class UsuarioServiceImplTest {
 		assertEquals("ALUNO", cracha.getTipoDoUsuario());
 	}
 
+	private static org.springframework.dao.DataIntegrityViolationException violacao(
+			org.hibernate.exception.ConstraintViolationException.ConstraintKind tipo) {
+		return new org.springframework.dao.DataIntegrityViolationException("violacao",
+				new org.hibernate.exception.ConstraintViolationException("detalhe interno", new java.sql.SQLException("x"), tipo,
+						"constraint"));
+	}
+
 	@Test
 	public void inserirComEmailDuplicadoLancaEmailJaCadastradoSemVazarOEmail() {
 		Usuario entidade = new Usuario();
@@ -178,11 +186,37 @@ public class UsuarioServiceImplTest {
 		entidade.setSenha("Segredo123");
 		when(passwordEncoder.encode("Segredo123")).thenReturn("{bcrypt}HASH");
 		when(repository.save(any(Usuario.class)))
-				.thenThrow(new org.springframework.dao.DataIntegrityViolationException("Duplicate entry 'ana@teste.com'"));
+				.thenThrow(violacao(org.hibernate.exception.ConstraintViolationException.ConstraintKind.UNIQUE));
 
 		br.com.fateczs.seazs.service.EmailJaCadastradoException ex = assertThrows(
 				br.com.fateczs.seazs.service.EmailJaCadastradoException.class, () -> service.inserir(entidade));
 
 		assertFalse(ex.getMessage().contains("ana@teste.com"));
+	}
+
+	@Test
+	public void inserirComOutraViolacaoDeIntegridadeNaoViraConflitoDeEmail() {
+		Usuario entidade = new Usuario();
+		entidade.setSenha("Segredo123");
+		when(passwordEncoder.encode("Segredo123")).thenReturn("{bcrypt}HASH");
+		org.springframework.dao.DataIntegrityViolationException notNull = violacao(
+				org.hibernate.exception.ConstraintViolationException.ConstraintKind.NOT_NULL);
+		when(repository.save(any(Usuario.class))).thenThrow(notNull);
+
+		org.springframework.dao.DataIntegrityViolationException lancada = assertThrows(
+				org.springframework.dao.DataIntegrityViolationException.class, () -> service.inserir(entidade));
+
+		assertSame(notNull, lancada);
+	}
+
+	@Test
+	public void inserirComViolacaoSemCausaDoHibernateNaoViraConflitoDeEmail() {
+		Usuario entidade = new Usuario();
+		entidade.setSenha("Segredo123");
+		when(passwordEncoder.encode("Segredo123")).thenReturn("{bcrypt}HASH");
+		when(repository.save(any(Usuario.class)))
+				.thenThrow(new org.springframework.dao.DataIntegrityViolationException("Duplicate entry"));
+
+		assertThrows(org.springframework.dao.DataIntegrityViolationException.class, () -> service.inserir(entidade));
 	}
 }
