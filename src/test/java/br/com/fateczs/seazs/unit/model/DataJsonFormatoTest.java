@@ -13,7 +13,7 @@ import tools.jackson.databind.json.JsonMapper;
 import br.com.fateczs.seazs.model.Evento;
 
 /**
- * Caracteriza o formato de data devolvido pela API (Jackson 3 do Boot 4, que mantem o formato do Boot 2.7/3.5,
+ * Caracteriza o formato de data devolvido pela API (Jackson 3 do Boot 4,
  * com spring.jackson.time-zone=America/Sao_Paulo), para detectar mudanca silenciosa.
  * Usa um JsonMapper montado a mao: protege contra
  * mudanca no Jackson ou na entidade, mas NAO valida a propriedade

@@ -32,8 +32,7 @@ import br.com.fateczs.seazs.service.UsuarioService;
  * Serializacao/desserializacao JSON de {@link UsuarioController} com o contexto web real
  * (Jackson do Boot, validacao, propriedades do application.properties) e o service mockado.
  *
- * Observacao de migracao: a partir do Boot 3.4 usa-se {@code @MockitoBean} no lugar de {@code @MockBean}.
- * No Boot 4, {@code @WebMvcTest} vive no pacote {@code org.springframework.boot.webmvc.test.autoconfigure}.
+ * O service e substituido por {@code @MockitoBean}; {@code @WebMvcTest} vem de {@code org.springframework.boot.webmvc.test.autoconfigure}.
  */
 @WebMvcTest(UsuarioController.class)
 public class UsuarioControllerWebMvcTest {
@@ -100,7 +99,7 @@ public class UsuarioControllerWebMvcTest {
 				.andExpect(jsonPath("$.curso").doesNotExist());
 	}
 
-	/** Protege `spring.jackson.time-zone` do application.properties: datas saem em America/Sao_Paulo (-03:00 com dois-pontos; igual ao Boot 2.7/3.5 e ao Jackson 3). */
+	/** Protege `spring.jackson.time-zone` do application.properties: datas saem em America/Sao_Paulo (-03:00 com dois-pontos). */
 	@Test
 	public void login_serializaDatasComoStringIsoNoFusoDeSaoPaulo() throws Exception {
 		Usuario u = usuarioCompleto();
