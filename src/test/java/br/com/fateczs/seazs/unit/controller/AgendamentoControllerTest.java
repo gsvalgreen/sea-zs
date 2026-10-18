@@ -2,6 +2,7 @@ package br.com.fateczs.seazs.unit.controller;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import br.com.fateczs.seazs.model.Agendamento;
@@ -55,12 +56,24 @@ public class AgendamentoControllerTest {
 	}
 
 	@Test
+	public void inserirZeraOIdDoCorpoParaSempreCriar() {
+		when(autorizacao.idAutenticado()).thenReturn(Optional.of(5));
+		Agendamento arg = new Agendamento();
+		arg.setId(42);
+
+		controller.inserirAgendamento(arg);
+
+		assertNull(arg.getId());
+		verify(agendamentoServ).inserir(arg);
+	}
+
+	@Test
 	public void inserirSemUsuarioAutenticadoNegaSemChamarOService() {
 		when(autorizacao.idAutenticado()).thenReturn(Optional.empty());
 
 		assertThrows(AccessDeniedException.class, () -> controller.inserirAgendamento(new Agendamento()));
 
-		org.mockito.Mockito.verifyNoInteractions(agendamentoServ);
+		verifyNoInteractions(agendamentoServ);
 	}
 
 	@Test

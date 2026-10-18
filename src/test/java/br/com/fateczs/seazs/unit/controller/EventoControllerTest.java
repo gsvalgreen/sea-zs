@@ -124,6 +124,18 @@ public class EventoControllerTest {
 	}
 
 	@Test
+	public void inserirZeraOIdDoCorpoParaSempreCriar() {
+		when(autorizacao.idAutenticado()).thenReturn(Optional.of(5));
+		Evento evento = new Evento();
+		evento.setId(42);
+
+		controller.inserirEvento(evento);
+
+		assertNull(evento.getId());
+		verify(eventoServ).inserir(evento);
+	}
+
+	@Test
 	public void inserirSemUsuarioAutenticadoNegaSemChamarOService() {
 		when(autorizacao.idAutenticado()).thenReturn(Optional.empty());
 

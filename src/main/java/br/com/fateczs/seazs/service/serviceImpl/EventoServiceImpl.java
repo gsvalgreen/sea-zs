@@ -38,6 +38,7 @@ public class EventoServiceImpl implements EventoService {
 			throw new EntityNotFoundException("Evento inexistente");
 		}
 		evento.setUsuarioCriador(gravado.getUsuarioCriador());
+		evento.setDataInclusao(gravado.getDataInclusao());
 		repository.save(evento);
 	}
 

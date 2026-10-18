@@ -41,6 +41,8 @@ public class AgendamentoController {
 		Usuario organizador = new Usuario();
 		organizador.setId(autorizacao.idAutenticado().orElseThrow(() -> new AccessDeniedException("Sem usuario autenticado")));
 		agendamento.setUsuarioOrganizador(organizador);
+		// Inserir sempre cria: um id no corpo viraria merge e trocaria o organizador de um registro existente.
+		agendamento.setId(null);
 		agendamentoServ.inserir(agendamento);
 	}
 	

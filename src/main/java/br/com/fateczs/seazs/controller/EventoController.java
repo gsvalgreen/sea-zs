@@ -32,6 +32,8 @@ public class EventoController {
 		Usuario criador = new Usuario();
 		criador.setId(autorizacao.idAutenticado().orElseThrow(() -> new AccessDeniedException("Sem usuario autenticado")));
 		evento.setUsuarioCriador(criador);
+		// Inserir sempre cria: um id no corpo viraria merge e trocaria autor/data de um registro existente.
+		evento.setId(null);
 		evento.setDataInclusao(new Date(clock.millis()));
 		eventoServ.inserir(evento);
 	}

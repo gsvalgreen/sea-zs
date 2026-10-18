@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.Date;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -309,6 +310,36 @@ public class AutorizacaoSpringBootTest {
 		agendamento.setUsuarioOrganizador(ana);
 		chamar(func, "/agendamento/alterar", agendamento, 200);
 		assertEquals(admin.getId(), agendamentos.findById(agendamento.getId()).get().getUsuarioOrganizador().getId());
+	}
+
+	/** Inserir sempre cria: id existente no corpo nao vira merge (o que trocaria autor e data do registro gravado). */
+	@Test
+	public void inserirComIdExistente_criaNovoRegistroEMantemOGravadoIntacto() throws Exception {
+		Usuario func = novo("func", TipoUsuario.FUNCIONARIO, false);
+		for (Usuario quem : new Usuario[] { func, admin }) {
+			Evento gravado = atividade.getAgendamento().getEvento();
+			Agendamento agendamentoGravado = atividade.getAgendamento();
+			Integer idEvento = gravado.getId();
+			Integer idAgendamento = agendamentoGravado.getId();
+			Date dataInclusao = eventos.findById(idEvento).get().getDataInclusao();
+			long eventosAntes = eventos.count();
+			long agendamentosAntes = agendamentos.count();
+			Evento corpoEvento = DadosTeste.evento("Outro", ana);
+			corpoEvento.setId(idEvento);
+			Agendamento corpoAgendamento = DadosTeste.agendamento(gravado, ana, DadosTeste.PASSADO, DadosTeste.FUTURO);
+			corpoAgendamento.setId(idAgendamento);
+
+			chamar(quem, "/evento/inserir", corpoEvento, 200);
+			chamar(quem, "/agendamento/inserir", corpoAgendamento, 200);
+
+			assertEquals(eventosAntes + 1, eventos.count());
+			assertEquals(agendamentosAntes + 1, agendamentos.count());
+			Evento depois = eventos.findById(idEvento).get();
+			assertEquals("Semana", depois.getNome());
+			assertEquals(admin.getId(), depois.getUsuarioCriador().getId());
+			assertEquals(dataInclusao, depois.getDataInclusao());
+			assertEquals(admin.getId(), agendamentos.findById(idAgendamento).get().getUsuarioOrganizador().getId());
+		}
 	}
 
 	@Test

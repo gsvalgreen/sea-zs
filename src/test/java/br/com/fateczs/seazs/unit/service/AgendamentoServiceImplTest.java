@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -94,7 +95,7 @@ public class AgendamentoServiceImplTest {
 		assertThrows(EntityNotFoundException.class, () -> service.alterar(semId));
 		assertThrows(EntityNotFoundException.class, () -> service.alterar(inexistente));
 
-		org.mockito.Mockito.verify(repository, org.mockito.Mockito.never()).save(any(Agendamento.class));
+		verify(repository, never()).save(any(Agendamento.class));
 	}
 
 	@Test

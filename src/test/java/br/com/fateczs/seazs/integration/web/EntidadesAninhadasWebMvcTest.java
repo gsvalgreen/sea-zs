@@ -2,8 +2,13 @@ package br.com.fateczs.seazs.integration.web;
 
 import static br.com.fateczs.seazs.integration.support.TokensTeste.admin;
 import static br.com.fateczs.seazs.integration.support.TokensTeste.como;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -11,12 +16,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.Collections;
 
+import jakarta.persistence.EntityNotFoundException;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.test.web.servlet.MockMvc;
 
 import br.com.fateczs.seazs.controller.AgendamentoController;
@@ -189,19 +198,35 @@ public class EntidadesAninhadasWebMvcTest {
 
 	@Test
 	public void alterarEventoEAgendamentoInexistentes_respondem404SemExporMensagemInterna() throws Exception {
-		org.mockito.Mockito.doThrow(new jakarta.persistence.EntityNotFoundException("detalhe interno sigiloso"))
+		doThrow(new EntityNotFoundException("detalhe interno sigiloso"))
 				.when(eventoService).alterar(any(Evento.class));
-		org.mockito.Mockito.doThrow(new jakarta.persistence.EntityNotFoundException("detalhe interno sigiloso"))
+		doThrow(new EntityNotFoundException("detalhe interno sigiloso"))
 				.when(agendamentoService).alterar(any(Agendamento.class));
 		String corpo = "{\"id\":999,\"nome\":\"X\",\"inicio\":1000,\"fim\":2000}";
 		String corpoAgendamento = "{\"id\":999,\"evento\":{\"id\":1},\"inicio\":1000,\"fim\":2000,\"pontuacaoStaff\":1}";
 
 		mvc.perform(post("/evento/alterar").with(admin()).contentType(MediaType.APPLICATION_JSON).content(corpo))
 				.andExpect(status().isNotFound())
-				.andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("sigiloso"))));
+				.andExpect(content().string(not(containsString("sigiloso"))));
 		mvc.perform(post("/agendamento/alterar").with(admin()).contentType(MediaType.APPLICATION_JSON).content(corpoAgendamento))
 				.andExpect(status().isNotFound())
-				.andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("sigiloso"))));
+				.andExpect(content().string(not(containsString("sigiloso"))));
+	}
+
+	/** Sub ausente ou nao numerico: o controller nega (403 problem+json), sem cair no handler de 404 nem chegar ao service. */
+	@Test
+	public void inserirEventoEAgendamentoComSubNaoNumerico_respondem403SemChamarOService() throws Exception {
+		RequestPostProcessor subInvalido = jwt().jwt(j -> j.subject("nao-numerico"))
+				.authorities(new SimpleGrantedAuthority("ROLE_ADMIN"));
+
+		mvc.perform(post("/evento/inserir").with(subInvalido).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"nome\":\"X\",\"inicio\":1000,\"fim\":2000}"))
+				.andExpect(status().isForbidden());
+		mvc.perform(post("/agendamento/inserir").with(subInvalido).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"evento\":{\"id\":1},\"inicio\":1000,\"fim\":2000,\"pontuacaoStaff\":1}"))
+				.andExpect(status().isForbidden());
+
+		verifyNoInteractions(eventoService, agendamentoService);
 	}
 
 	private static String corpoInscricao() {

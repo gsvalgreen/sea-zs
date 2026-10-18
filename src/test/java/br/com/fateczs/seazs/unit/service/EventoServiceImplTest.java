@@ -4,10 +4,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -68,18 +70,22 @@ public class EventoServiceImplTest {
 		Evento noBanco = new Evento();
 		noBanco.setId(1);
 		noBanco.setUsuarioCriador(gravado);
+		Date inclusao = new Date(1000L);
+		noBanco.setDataInclusao(inclusao);
 		when(repository.findById(1)).thenReturn(Optional.of(noBanco));
 		Usuario falso = new Usuario();
 		falso.setId(99);
 		Evento corpo = new Evento();
 		corpo.setId(1);
 		corpo.setUsuarioCriador(falso);
+		corpo.setDataInclusao(new Date(5000L));
 
 		service.alterar(corpo);
 
 		ArgumentCaptor<Evento> salvo = ArgumentCaptor.forClass(Evento.class);
 		verify(repository).save(salvo.capture());
 		assertSame(gravado, salvo.getValue().getUsuarioCriador());
+		assertSame(inclusao, salvo.getValue().getDataInclusao());
 	}
 
 	@Test
@@ -92,7 +98,7 @@ public class EventoServiceImplTest {
 		assertThrows(EntityNotFoundException.class, () -> service.alterar(semId));
 		assertThrows(EntityNotFoundException.class, () -> service.alterar(inexistente));
 
-		org.mockito.Mockito.verify(repository, org.mockito.Mockito.never()).save(any(Evento.class));
+		verify(repository, never()).save(any(Evento.class));
 	}
 
 	@Test
