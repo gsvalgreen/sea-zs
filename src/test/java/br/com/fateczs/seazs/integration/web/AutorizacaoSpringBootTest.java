@@ -61,6 +61,10 @@ public class AutorizacaoSpringBootTest {
 	@Autowired
 	private br.com.fateczs.seazs.repository.CursoRepository cursos;
 	@Autowired
+	private br.com.fateczs.seazs.repository.DisciplinaRepository disciplinas;
+	@Autowired
+	private br.com.fateczs.seazs.repository.UsuarioDisciplinaRepository vinculos;
+	@Autowired
 	private EventoRepository eventos;
 	@Autowired
 	private AgendamentoRepository agendamentos;
@@ -225,12 +229,27 @@ public class AutorizacaoSpringBootTest {
 		chamar(func, "/papel/inserir", novoPapel(), 200);
 		chamar(func, "/papel/excluir", papeis.save(DadosTeste.papel("Descartavel-" + UUID.randomUUID())), 200);
 		chamar(func, "/disciplina/inserir", DadosTeste.disciplina("D-" + UUID.randomUUID().toString().substring(0, 8), cursos.save(DadosTeste.curso("Curso-" + UUID.randomUUID()))), 200);
-		chamar(func, "/usuario/disciplina/excluir", "{}", 200); // vinculo: passa da autorizacao (nada a excluir)
+		excluirVinculoComo(func);
 
 		chamar(func, "/usuario/listar", "{}", 403);
 		chamar(func, "/agendamento/staff/inserir", "{}", 403);
 		chamar(func, "/atividade/inscricao/alterar", inscricaoDaAna, 403);
 		put403(func, "/api/v1/usuarios/" + ana.getId() + "/perfil", "{\"tipoUsuario\":\"ALUNO\",\"adm\":true}");
+	}
+
+	private void excluirVinculoComo(Usuario quem) throws Exception {
+		br.com.fateczs.seazs.model.Disciplina disciplina = disciplinas.save(DadosTeste.disciplina(
+				"V-" + UUID.randomUUID().toString().substring(0, 8), cursos.save(DadosTeste.curso("Curso-" + UUID.randomUUID()))));
+		br.com.fateczs.seazs.model.UsuarioDisciplina vinculo = new br.com.fateczs.seazs.model.UsuarioDisciplina();
+		vinculo.getIdUsuarioDisciplina().setUsuario(ana);
+		vinculo.getIdUsuarioDisciplina().setDisciplina(disciplina);
+		vinculo.getIdUsuarioDisciplina().setDtInicio(DadosTeste.PASSADO);
+		vinculos.save(vinculo);
+		assertEquals(1, vinculos.findByIdUsuarioDisciplinaUsuarioId(ana.getId()).size());
+
+		chamar(quem, "/usuario/disciplina/excluir", vinculo, 200);
+
+		assertEquals(0, vinculos.findByIdUsuarioDisciplinaUsuarioId(ana.getId()).size());
 	}
 
 	@Test

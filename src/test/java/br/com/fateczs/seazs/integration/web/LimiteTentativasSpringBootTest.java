@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,8 +58,12 @@ public class LimiteTentativasSpringBootTest {
 	@Autowired
 	private UsuarioRepository usuarios;
 
+	private static final AtomicInteger SEQUENCIA_IP = new AtomicInteger();
+
+	/** IP IPv4 distinto a cada chamada (contador, sem colisao entre testes). */
 	private static String ipUnico() {
-		return "10." + (int) (Math.random() * 250) + "." + (int) (Math.random() * 250) + "." + (int) (Math.random() * 250);
+		int n = SEQUENCIA_IP.incrementAndGet();
+		return "10." + ((n >> 16) & 255) + "." + ((n >> 8) & 255) + "." + (n & 255);
 	}
 
 	private MockHttpServletResponse login(String caminho, String ip, String email, String senha) throws Exception {
@@ -224,7 +229,7 @@ public class LimiteTentativasSpringBootTest {
 
 	@Test
 	public void ipv6DoMesmoPrefixo64CompartilhaOLimite() throws Exception {
-		String base = "2001:db8:" + Integer.toHexString((int) (Math.random() * 60000) + 1) + ":1:";
+		String base = "2001:db8:" + Integer.toHexString(SEQUENCIA_IP.incrementAndGet()) + ":1:";
 		for (int i = 0; i < 4; i++) {
 			assertEquals(401, login("/api/v1/auth/login", base + ":" + (i + 1), "x" + i + "@nao.com", "x").getStatus());
 		}
