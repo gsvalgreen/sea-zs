@@ -29,7 +29,7 @@ Legenda: `[x]` feito, revisado (`revisor-codigo`) e com passada de `seguranca-co
 
 ### Fase 2, segurança
 - [x] 2a. Autenticação: Spring Security 7, JWT HS256, refresh token rotativo, BCrypt com migração de senhas legadas, `/api/v1/auth/*`, CORS global, `equals/hashCode` de `Usuario` por `id`, cadastro público sem escalada de privilégio, 409 para e-mail duplicado
-- [~] 2b. Autorização: default-deny, matriz de perfis por endpoint, ownership/IDOR, promoção de perfil por admin (`PUT /api/v1/usuarios/{id}/perfil`), correção do 409 vs. campo obrigatório ausente. IMPLEMENTADO (commits 9a9a6fd, f236fab, 6c18719; 315 unit + 118 integration + 17 featureTest verdes). O `revisor-codigo` REPROVOU; achados B1, I1 a I4 e S1 a S4 CORRIGIDOS (ver abaixo) e matriz nova (ADMIN/FUNCIONARIO escrevem estruturas; PROFESSOR só cria evento/agendamento/atividade) aplicada. PENDENTE: nova revisão do `revisor-codigo` e depois a passada do `seguranca-codigo-limpo`
+- [~] 2b. Autorização: default-deny, matriz de perfis por endpoint, ownership/IDOR, promoção de perfil por admin (`PUT /api/v1/usuarios/{id}/perfil`), correção do 409 vs. campo obrigatório ausente. IMPLEMENTADO (commits 9a9a6fd, f236fab, 6c18719; 315 unit + 118 integration + 17 featureTest verdes). O `revisor-codigo` REPROVOU; achados B1, I1 a I4 e S1 a S4 CORRIGIDOS (ver abaixo) e matriz nova (ADMIN/FUNCIONARIO escrevem estruturas; PROFESSOR só cria evento/agendamento/atividade) aplicada. Passada do `seguranca-codigo-limpo` FEITA (achados abaixo); PENDENTE: o `revisor-codigo` rever só as alterações dela
 - [x] 2b. Rate limit por IP e lockout progressivo por e-mail (implementação própria em memória, sem Bucket4j), 429 com `Retry-After` (revisão e passada de segurança pendentes, como o item acima)
 - [ ] 2c. Frontend (`sea-zs-angular`, subagent `dev-frontend`, sem modernizar a stack do front): `type="password"`, interceptor Bearer, guard de rota, `environment.apiUrl`, não persistir dados pessoais, tratamento de falha de login, tratar a mudança de data `-0300` para `-03:00`
 - [ ] Remover `{noop}` do encoder quando `select count(*) from tb_usuario where senha not like '{bcrypt}%'` retornar 0
@@ -43,6 +43,12 @@ Legenda: `[x]` feito, revisado (`revisor-codigo`) e com passada de `seguranca-co
 - [x] S1: refresh tokens revogados ao mudar perfil (`alterarPerfil`) ou senha (`alterar`). [~] S2: `/usuario/alterar` segue sem exigir a senha atual (exigir seria quebra de contrato legado; documentado no README, resolver no `/api/v1` da Fase 3)
 - [x] S3: o login legado pode devolver 429 (status novo no contrato legado): mantido e documentado no README; o front trata no 2c
 - [x] S4: `ControllersProtegidosTest` não detecta `@PreAuthorize("permitAll()")` nem controller fora do pacote `controller`; faltam testes de caminho codificado e IPv6
+
+**Passada de segurança e código limpo do 2b (`seguranca-codigo-limpo`)**
+- [x] I-2: lost update entre `UsuarioServiceImpl.alterar` e `alterarPerfil`. `alterar` agora copia só os dados cadastrais para a entidade gravada e `Usuario` é `@DynamicUpdate` (o UPDATE não regrava `adm`/`tipoUsuario`); teste unitário
+- [x] I-1: teste de concorrência do último ADMIN (`UltimoAdministradorConcorrenciaSpringBootTest`, H2, duas threads, 15 rodadas; falha sem o `@Lock`, passa com ele). Fidelidade ao InnoDB (MySQL) ainda não verificada: [ ] repetir como featureTest com MySQL (Testcontainers)
+- [x] S-2 (README do lockout), S-3 (assert real ao excluir vínculo), S-4 (IP por contador no lugar de `Math.random()`)
+- [ ] Dívida: `/usuario/alterar` trocando o e-mail para um já cadastrado gera `DataIntegrityViolationException` (500); mapear para 409 como no cadastro (Fase 3)
 
 ### Fase 3, API orientada a telas (`/api/v1`)
 - [ ] DTOs, `@RestControllerAdvice` com `ProblemDetail`, exceções de domínio (404/409/422)

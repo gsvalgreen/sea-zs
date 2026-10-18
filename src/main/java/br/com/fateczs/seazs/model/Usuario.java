@@ -2,6 +2,8 @@ package br.com.fateczs.seazs.model;
 
 import java.util.Date;
 
+import org.hibernate.annotations.DynamicUpdate;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -23,6 +25,7 @@ import br.com.fateczs.seazs.validation.DadosCadastrais;
 import br.com.fateczs.seazs.validation.MaxBytes;
 
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+@DynamicUpdate
 @Entity(name = "Usuario")
 @Table(name = "tb_Usuario")
 public class Usuario {

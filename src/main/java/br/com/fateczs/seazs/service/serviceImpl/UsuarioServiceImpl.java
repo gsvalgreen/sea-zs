@@ -76,22 +76,41 @@ public class UsuarioServiceImpl implements UsuarioService {
 	@Override
 	@Transactional
 	public void alterar(Usuario usuario) {
-		// adm e tipoUsuario nao mudam por aqui: preserva o que esta gravado (sem registro, vale o padrao do cadastro).
+		// A senha recebida e sempre texto puro (o cliente nunca ve o hash); guarda BCrypt.
+		String senha = passwordEncoder.encode(usuario.getSenha());
 		Usuario gravado = usuario.getId() == null ? null : repository.findById(usuario.getId()).orElse(null);
+		Integer id = usuario.getId();
 		if (gravado == null) {
+			// Sem registro, vale o padrao do cadastro (o cliente nao define privilegios).
 			usuario.setAdm(false);
 			usuario.setTipoUsuario(TipoUsuario.VISITANTE);
+			usuario.setSenha(senha);
+			repository.save(usuario);
 		} else {
-			usuario.setAdm(gravado.getAdm());
-			usuario.setTipoUsuario(gravado.getTipoUsuario());
+			// Atualiza a entidade gravada so com os dados cadastrais: adm e tipoUsuario nunca saem do cliente, e como
+			// a entidade e @DynamicUpdate o UPDATE nao regrava o perfil (sem lost update com alterarPerfil).
+			copiarDadosCadastrais(usuario, gravado);
+			gravado.setSenha(senha);
+			repository.save(gravado);
 		}
-		// A senha recebida e sempre texto puro (o cliente nunca ve o hash); guarda BCrypt.
-		usuario.setSenha(passwordEncoder.encode(usuario.getSenha()));
-		repository.save(usuario);
 		// A senha foi trocada: sessoes (refresh tokens) abertas com a senha anterior deixam de renovar.
-		if (usuario.getId() != null) {
-			refreshTokenRepository.deleteByIdUsuario(usuario.getId());
+		if (id != null) {
+			refreshTokenRepository.deleteByIdUsuario(id);
 		}
+	}
+
+	private static void copiarDadosCadastrais(Usuario origem, Usuario destino) {
+		destino.setEmail(origem.getEmail());
+		destino.setNome(origem.getNome());
+		destino.setEndereco(origem.getEndereco());
+		destino.setCelular(origem.getCelular());
+		destino.setDataNasc(origem.getDataNasc());
+		destino.setSemestre(origem.getSemestre());
+		destino.setTurno(origem.getTurno());
+		destino.setRg(origem.getRg());
+		destino.setGenero(origem.getGenero());
+		destino.setMatricula(origem.getMatricula());
+		destino.setCurso(origem.getCurso());
 	}
 
 	@Override

@@ -95,22 +95,33 @@ public class UsuarioServiceImplTest {
 	}
 
 	@Test
-	public void alterarPreservaAdmETipoUsuarioGravados() {
+	public void alterarAtualizaAEntidadeGravadaSoComDadosCadastraisEPreservaPerfil() {
 		Usuario gravado = new Usuario();
+		gravado.setId(5);
 		gravado.setAdm(true);
 		gravado.setTipoUsuario(TipoUsuario.FUNCIONARIO);
 		when(repository.findById(5)).thenReturn(Optional.of(gravado));
+		when(passwordEncoder.encode("nova")).thenReturn("{bcrypt}NOVO");
 		Usuario entidade = new Usuario();
 		entidade.setId(5);
+		entidade.setNome("Novo Nome");
+		entidade.setEmail("novo@x.com");
 		entidade.setSenha("nova");
 		entidade.setAdm(false);
 		entidade.setTipoUsuario(TipoUsuario.ALUNO);
 
 		service.alterar(entidade);
 
-		verify(repository).save(entidade);
-		assertEquals(Boolean.TRUE, entidade.getAdm());
-		assertEquals(TipoUsuario.FUNCIONARIO, entidade.getTipoUsuario());
+		// salva a entidade gravada (nao a do cliente): perfil intacto e nenhuma copia obsoleta de adm/tipoUsuario
+		ArgumentCaptor<Usuario> salvo = ArgumentCaptor.forClass(Usuario.class);
+		verify(repository).save(salvo.capture());
+		assertSame(gravado, salvo.getValue());
+		assertEquals(Boolean.TRUE, gravado.getAdm());
+		assertEquals(TipoUsuario.FUNCIONARIO, gravado.getTipoUsuario());
+		assertEquals("Novo Nome", gravado.getNome());
+		assertEquals("novo@x.com", gravado.getEmail());
+		assertEquals("{bcrypt}NOVO", gravado.getSenha());
+		verify(refreshTokenRepository).deleteByIdUsuario(5);
 	}
 
 	@Test
