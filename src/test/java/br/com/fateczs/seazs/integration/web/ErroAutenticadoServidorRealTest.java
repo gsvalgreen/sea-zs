@@ -17,6 +17,7 @@ import org.springframework.test.context.TestPropertySource;
 
 import br.com.fateczs.seazs.integration.support.ComSeguranca;
 import br.com.fateczs.seazs.integration.support.DadosTeste;
+import br.com.fateczs.seazs.model.Usuario;
 import br.com.fateczs.seazs.repository.UsuarioRepository;
 import br.com.fateczs.seazs.security.JwtTokenService;
 import br.com.fateczs.seazs.utils.TipoUsuario;
@@ -61,7 +62,7 @@ public class ErroAutenticadoServidorRealTest {
 
 	@Test
 	public void erro500_naoVazaTraceNemMensagemInterna() throws Exception {
-		br.com.fateczs.seazs.model.Usuario u = DadosTeste.usuario("erro500-" + System.nanoTime() + "@teste.com");
+		Usuario u = DadosTeste.usuario("erro500-" + System.nanoTime() + "@teste.com");
 		String token = tokens.emitir(usuarios.save(u)).valor();
 
 		HttpResponse<String> resposta = HttpClient.newHttpClient().send(
