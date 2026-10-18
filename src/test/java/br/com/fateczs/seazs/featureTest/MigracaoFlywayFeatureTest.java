@@ -45,6 +45,10 @@ public class MigracaoFlywayFeatureTest extends FeatureTestBase {
 				assertEquals("1", rs.getString("version"));
 				assertEquals("BASELINE", rs.getString("type"));
 				assertEquals(true, rs.getBoolean("success"));
+				// a V2 (refresh token) e aplicada em seguida sobre o baseline
+				rs.next();
+				assertEquals("2", rs.getString("version"));
+				assertEquals("SQL", rs.getString("type"));
 			}
 		}
 	}
@@ -78,14 +82,16 @@ public class MigracaoFlywayFeatureTest extends FeatureTestBase {
 
 	private static ConfigurableApplicationContext iniciar(String url, String... propriedades) {
 		// Argumentos de linha de comando tem precedencia sobre o application.properties (.properties() seria o menor).
-		String[] args = new String[propriedades.length + 4];
+		String[] args = new String[propriedades.length + 6];
 		args[0] = "--spring.datasource.url=" + url;
 		args[1] = "--spring.datasource.username=root";
 		args[2] = "--spring.datasource.password=system";
 		args[3] = "--spring.jpa.show-sql=false";
+		args[4] = "--app.jwt.secret=segredo-somente-para-testes-0123456789";
+		args[5] = "--server.port=0";
 		for (int i = 0; i < propriedades.length; i++) {
-			args[4 + i] = "--" + propriedades[i];
+			args[6 + i] = "--" + propriedades[i];
 		}
-		return new SpringApplicationBuilder(SeazsApplication.class).web(WebApplicationType.NONE).run(args);
+		return new SpringApplicationBuilder(SeazsApplication.class).web(WebApplicationType.SERVLET).run(args);
 	}
 }
