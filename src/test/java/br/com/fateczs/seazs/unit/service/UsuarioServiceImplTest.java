@@ -1,6 +1,8 @@
 package br.com.fateczs.seazs.unit.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -9,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,6 +26,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import br.com.fateczs.seazs.repository.RefreshTokenRepository;
 import br.com.fateczs.seazs.repository.UsuarioRepository;
 import br.com.fateczs.seazs.service.serviceImpl.UsuarioServiceImpl;
+import br.com.fateczs.seazs.utils.TipoUsuario;
 
 @ExtendWith(MockitoExtension.class)
 public class UsuarioServiceImplTest {
@@ -69,6 +73,58 @@ public class UsuarioServiceImplTest {
 		assertThrows(IllegalArgumentException.class, () -> service.inserir(entidade));
 
 		verify(repository, never()).save(any());
+	}
+
+	@Test
+	public void inserirIgnoraAdmTipoUsuarioEIdEnviadosPeloCliente() {
+		Usuario entidade = new Usuario();
+		entidade.setId(1);
+		entidade.setSenha("Segredo123");
+		entidade.setAdm(true);
+		entidade.setTipoUsuario(TipoUsuario.PROFESSOR);
+		when(passwordEncoder.encode("Segredo123")).thenReturn("{bcrypt}HASH");
+
+		service.inserir(entidade);
+
+		ArgumentCaptor<Usuario> salvo = ArgumentCaptor.forClass(Usuario.class);
+		verify(repository).save(salvo.capture());
+		assertFalse(salvo.getValue().getAdm());
+		assertEquals(TipoUsuario.VISITANTE, salvo.getValue().getTipoUsuario());
+		assertNull(salvo.getValue().getId());
+	}
+
+	@Test
+	public void alterarPreservaAdmETipoUsuarioGravados() {
+		Usuario gravado = new Usuario();
+		gravado.setAdm(true);
+		gravado.setTipoUsuario(TipoUsuario.FUNCIONARIO);
+		when(repository.findById(5)).thenReturn(Optional.of(gravado));
+		Usuario entidade = new Usuario();
+		entidade.setId(5);
+		entidade.setSenha("nova");
+		entidade.setAdm(false);
+		entidade.setTipoUsuario(TipoUsuario.ALUNO);
+
+		service.alterar(entidade);
+
+		verify(repository).save(entidade);
+		assertEquals(Boolean.TRUE, entidade.getAdm());
+		assertEquals(TipoUsuario.FUNCIONARIO, entidade.getTipoUsuario());
+	}
+
+	@Test
+	public void alterarSemRegistroGravadoNaoPermiteEscalarPrivilegio() {
+		when(repository.findById(8)).thenReturn(Optional.empty());
+		Usuario entidade = new Usuario();
+		entidade.setId(8);
+		entidade.setSenha("nova");
+		entidade.setAdm(true);
+		entidade.setTipoUsuario(TipoUsuario.PROFESSOR);
+
+		service.alterar(entidade);
+
+		assertFalse(entidade.getAdm());
+		assertEquals(TipoUsuario.VISITANTE, entidade.getTipoUsuario());
 	}
 
 	@Test

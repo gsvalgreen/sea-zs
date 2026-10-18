@@ -225,6 +225,8 @@ public class AuthServiceImplTest {
 	public void loginLegadoSemEmailOuSenhaOuComSenhaAcimaDe72BytesNemTentaAutenticar() {
 		assertFalse(service.loginLegado(null, "x").isPresent());
 		assertFalse(service.loginLegado("a@b.com", null).isPresent());
+		assertFalse(service.loginLegado("a@b.com", "").isPresent());
+		assertFalse(service.loginLegado("a@b.com", "   ").isPresent());
 		// 40 caracteres de 2 bytes = 80 bytes
 		assertFalse(service.loginLegado("a@b.com", "é".repeat(40)).isPresent());
 

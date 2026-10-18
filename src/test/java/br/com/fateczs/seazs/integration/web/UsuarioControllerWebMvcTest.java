@@ -161,19 +161,17 @@ public class UsuarioControllerWebMvcTest {
 	}
 
 	/**
-	 * Caracterizacao (mass assignment): o cadastro publico aceita `adm` e `tipoUsuario` enviados pelo cliente.
-	 * A Fase 2 (seguranca) deve forcar esses campos no servidor; este teste entao deve ser invertido.
+	 * O controller so repassa o corpo ao service; quem ignora `adm`/`tipoUsuario` do cliente e o service
+	 * (UsuarioServiceImplTest) e o efeito ponta a ponta esta em AutenticacaoSpringBootTest.
 	 */
 	@Test
-	public void inserir_hoje_aceitaAdmETipoUsuarioEnviadosPeloCliente() throws Exception {
-		String corpo = "{\"email\":\"x@teste.com\",\"senha\":\"s\",\"adm\":true,\"tipoUsuario\":\"PROFESSOR\"}";
-
-		mvc.perform(post("/usuario/inserir").contentType(MediaType.APPLICATION_JSON).content(corpo))
-				.andExpect(status().isOk());
-
-		ArgumentCaptor<Usuario> capturado = ArgumentCaptor.forClass(Usuario.class);
-		verify(usuarioService).inserir(capturado.capture());
-		assertTrue(capturado.getValue().getAdm());
+	public void inserir_comSenhaEmBranco_respondeBadRequest() throws Exception {
+		for (String senha : new String[] { "", "   " }) {
+			String corpo = "{\"email\":\"x@teste.com\",\"senha\":\"" + senha + "\"}";
+			mvc.perform(post("/usuario/inserir").contentType(MediaType.APPLICATION_JSON).content(corpo))
+					.andExpect(status().isBadRequest());
+		}
+		verify(usuarioService, never()).inserir(any(Usuario.class));
 	}
 
 	@Test

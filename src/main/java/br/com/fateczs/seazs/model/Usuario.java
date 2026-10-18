@@ -12,6 +12,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
 import jakarta.persistence.TemporalType;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -35,7 +36,7 @@ public class Usuario {
 	private String email;
 
 
-	@NotNull
+	@NotBlank
 	@MaxBytes(MaxBytes.SENHA_BCRYPT)
 	@JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
 	@Column(name = "senha", nullable = false)
@@ -234,6 +235,11 @@ public class Usuario {
 		return getId() != null && getId().equals(idOutro);
 	}
 
+	/**
+	 * Constante de proposito: o id e gerado no persist, entao um hash baseado nele mudaria com o objeto ja dentro de
+	 * um HashSet/HashMap. Custo: todos os Usuario caem no mesmo bucket (colecoes hash passam a O(n)); aceitavel porque
+	 * o codigo so usa colecoes pequenas de Usuario. Se isso mudar, reavaliar (ex.: hash por chave natural, o e-mail).
+	 */
 	@Override
 	public int hashCode() {
 		return Usuario.class.hashCode();

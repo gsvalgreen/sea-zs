@@ -1,6 +1,7 @@
 package br.com.fateczs.seazs.integration.web;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -26,6 +27,7 @@ import br.com.fateczs.seazs.integration.support.DadosTeste;
 import br.com.fateczs.seazs.model.Usuario;
 import br.com.fateczs.seazs.repository.RefreshTokenRepository;
 import br.com.fateczs.seazs.repository.UsuarioRepository;
+import br.com.fateczs.seazs.utils.TipoUsuario;
 
 /**
  * Wiring real (contexto completo, H2): DaoAuthenticationProvider + DelegatingPasswordEncoder + JPA + filtros.
@@ -126,6 +128,67 @@ public class AutenticacaoSpringBootTest {
 		assertNotEquals("", JsonPath.read(corpo, "$.token"));
 		assertTrue(!corpo.contains("senha") && !corpo.contains("Segredo123"));
 		assertEquals("", postar("/usuario/login", json(u.getEmail(), "SEGREDO123"), 200)); // contrato legado: 200 vazio
+	}
+
+	/** Regressao: e-mail inexistente no legado dava 500 (UnexpectedRollbackException por transacao externa rollback-only). */
+	@Test
+	public void loginLegadoComEmailInexistente_responde200ComCorpoVazio() throws Exception {
+		assertEquals("", postar("/usuario/login", json("nao-existe@teste.com", "qualquer"), 200));
+	}
+
+	@Test
+	public void loginLegado_emailInexistenteIndistinguivelDeSenhaErrada() throws Exception {
+		Usuario u = salvarLegado("Segredo123");
+
+		String senhaErrada = postar("/usuario/login", json(u.getEmail(), "errada"), 200);
+		String semUsuario = postar("/usuario/login", json("nao-existe@teste.com", "errada"), 200);
+
+		assertEquals(senhaErrada, semUsuario);
+	}
+
+	@Test
+	public void senhaVaziaOuEmBranco_recusadaNoLoginV1EnoLegado() throws Exception {
+		Usuario u = salvarLegado("Segredo123");
+		for (String senha : new String[] { "", "   " }) {
+			postar("/api/v1/auth/login", json(u.getEmail(), senha), 400);
+			assertEquals("", postar("/usuario/login", json(u.getEmail(), senha), 200));
+		}
+	}
+
+	@Test
+	public void cadastroComSenhaVaziaOuEmBranco_responde400() throws Exception {
+		for (String senha : new String[] { "", "   " }) {
+			postar("/usuario/inserir", "{\"email\":\"branca@teste.com\",\"senha\":\"" + senha + "\"}", 400);
+		}
+	}
+
+	@Test
+	public void cadastroPublico_ignoraAdmETipoUsuarioDoCliente() throws Exception {
+		String email = "escalada-" + UUID.randomUUID() + "@teste.com";
+		postar("/usuario/inserir", "{\"email\":\"" + email + "\",\"senha\":\"Segredo123\",\"nome\":\"N\",\"endereco\":\"R\","
+				+ "\"celular\":\"1\",\"dataNasc\":631152000000,\"adm\":true,\"rg\":\"1\",\"genero\":\"F\",\"tipoUsuario\":\"PROFESSOR\"}", 200);
+
+		Usuario criado = usuarios.findByEmail(email).get();
+		assertFalse(criado.getAdm());
+		assertEquals(TipoUsuario.VISITANTE, criado.getTipoUsuario());
+		String corpo = postar("/api/v1/auth/login", json(email, "Segredo123"), 200);
+		assertEquals(java.util.Arrays.asList("ROLE_VISITANTE"), JsonPath.read(corpo, "$.usuario.authorities"));
+	}
+
+	@Test
+	public void alterar_preservaAdmETipoUsuarioPersistidos() throws Exception {
+		Usuario u = salvarLegado("Segredo123");
+		u.setAdm(true);
+		u.setTipoUsuario(TipoUsuario.FUNCIONARIO);
+		usuarios.save(u);
+
+		postar("/usuario/alterar", "{\"id\":" + u.getId() + ",\"email\":\"" + u.getEmail() + "\",\"senha\":\"Nova12345\",\"nome\":\"N\","
+				+ "\"endereco\":\"R\",\"celular\":\"1\",\"dataNasc\":631152000000,\"adm\":false,\"rg\":\"1\",\"genero\":\"F\","
+				+ "\"tipoUsuario\":\"ALUNO\"}", 200);
+
+		Usuario depois = usuarios.findById(u.getId()).get();
+		assertTrue(depois.getAdm());
+		assertEquals(TipoUsuario.FUNCIONARIO, depois.getTipoUsuario());
 	}
 
 	@Test

@@ -46,8 +46,10 @@ public class AuthServiceImpl implements AuthService {
 	@Autowired
 	private Clock clock;
 
+	// Sem @Transactional em login/loginLegado: o loadUserByUsername (readOnly) marcaria a transacao externa como
+	// rollback-only ao lancar UsernameNotFoundException (e-mail inexistente), e o commit viraria
+	// UnexpectedRollbackException (500). Cada passo (leitura do usuario, rehash, refresh token) ja tem transacao propria.
 	@Override
-	@Transactional
 	public TokenResponse login(LoginRequest requisicao) {
 		Usuario usuario = autenticar(requisicao.email(), requisicao.senha());
 		return emitir(usuario, UUID.randomUUID().toString());
@@ -88,9 +90,8 @@ public class AuthServiceImpl implements AuthService {
 	}
 
 	@Override
-	@Transactional
 	public Optional<LoginLegadoResponse> loginLegado(String email, String senha) {
-		if (email == null || senha == null || senha.getBytes(StandardCharsets.UTF_8).length > MaxBytes.SENHA_BCRYPT) {
+		if (email == null || senha == null || senha.trim().isEmpty() || senha.getBytes(StandardCharsets.UTF_8).length > MaxBytes.SENHA_BCRYPT) {
 			return Optional.empty();
 		}
 		try {
