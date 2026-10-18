@@ -28,6 +28,9 @@ import com.jayway.jsonpath.JsonPath;
  * em container, com os mesmos parametros do Dockerfile do projeto. Sem Docker os testes sao PULADOS
  * (Assumptions) localmente, mas FALHAM quando a variavel de ambiente CI=true (GitHub Actions).
  *
+ * Schema: o featureTest roda com Flyway habilitado e ddl-auto=validate, como nos ambientes nao locais; assim o
+ * V1__baseline.sql precisa casar com as entidades JPA.
+ *
  * Isolamento: o container e unico para toda a JVM de teste; cada teste cria seus proprios dados com sufixo
  * unico ({@link #unico(String)}) e nao depende de dados pre-existentes nem da ordem de execucao.
  *
@@ -81,8 +84,16 @@ public abstract class FeatureTestBase {
 			TestPropertyValues.of(
 					"spring.datasource.url=" + mysql.getJdbcUrl(),
 					"spring.datasource.username=" + mysql.getUsername(),
-					"spring.datasource.password=" + mysql.getPassword()).applyTo(context);
+					"spring.datasource.password=" + mysql.getPassword(),
+					// Schema vem da migracao V1 e o Hibernate apenas valida: falha se uma entidade divergir do SQL.
+					"spring.flyway.enabled=true",
+					"spring.jpa.hibernate.ddl-auto=validate").applyTo(context);
 		}
+	}
+
+	/** Container MySQL compartilhado (valido apos {@link #exigirDocker()}); usado por testes que criam bancos proprios. */
+	protected static MySQLContainer mysqlContainer() {
+		return mysql;
 	}
 
 	// ---- helpers de chamada ---------------------------------------------------------------------
