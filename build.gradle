@@ -1,5 +1,5 @@
 plugins {
-    id 'org.springframework.boot' version '3.5.16'
+    id 'org.springframework.boot' version '4.1.1'
 }
 apply plugin: 'java'
 apply plugin: 'io.spring.dependency-management'
@@ -22,12 +22,12 @@ tasks.withType(JavaCompile) {
 
 
 
-// Bumps pontuais sobre o BOM do Boot 3.5.16 (advisories do OSV):
-//  - Tomcat 10.1.55 -> 10.1.61: GHSA-9xv2-5v5q-p794, GHSA-gcx9-497g-6cp6, GHSA-h3x4-894j-xpx5 (corrigidos em 10.1.58);
-//  - Jackson 2.21.4 -> 2.21.7: GHSA-cxp5-3px4-pw24, GHSA-wv8q-qhhj-9h54 e outros (corrigidos em 2.21.5 a 2.21.7).
+// Bumps pontuais sobre o BOM do Boot 4.1.1 (advisories do OSV):
+//  - Tomcat 11.0.24 -> 11.0.27: GHSA-9xv2-5v5q-p794, GHSA-gcx9-497g-6cp6, GHSA-h3x4-894j-xpx5 (corrigidos em 11.0.25);
+//  - Jackson 3 (tools.jackson) 3.1.5 -> 3.1.7: GHSA-cxp5-3px4-pw24, GHSA-wv8q-qhhj-9h54 e outros (corrigidos em 3.1.6 e 3.1.7).
 // Remover quando o BOM do Boot ja trouxer versoes >= estas.
-ext['tomcat.version'] = '10.1.61'
-ext['jackson-bom.version'] = '2.21.7'
+ext['tomcat.version'] = '11.0.27'
+ext['jackson-bom.version'] = '3.1.7'
 
 configurations {
     mockitoAgent
@@ -38,26 +38,26 @@ repositories {
     maven { url = "https://repo.maven.apache.org/maven2" }
 }
 dependencies {
-    // Versoes gerenciadas pelo BOM do Boot (3.5.x: Hibernate 6.6, H2 2.3, JUnit Jupiter 5.12, Mockito 5.17, Testcontainers 1.21).
+    // Versoes gerenciadas pelo BOM do Boot (4.1.x: Spring Framework 7, Hibernate 7.4, Jackson 3, Tomcat 11, H2 2.4, JUnit Jupiter 6, Mockito 5.23, Testcontainers 2.0).
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
-    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     // Driver oficial do MySQL 8 (artefato com.mysql:mysql-connector-j, versao do BOM do Boot).
     runtimeOnly 'com.mysql:mysql-connector-j'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    // Boot 4 modularizou os testes: @DataJpaTest e @WebMvcTest/@AutoConfigureMockMvc vem de starters de teste proprios.
+    testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
     // integration: banco em memoria (versao gerenciada pelo BOM do Boot)
     testRuntimeOnly 'com.h2database:h2'
     // featureTest: MySQL 8 real via Docker (extensao JUnit 5 do Testcontainers)
-    testImplementation 'org.testcontainers:mysql'
-    testImplementation 'org.testcontainers:junit-jupiter'
+    testImplementation 'org.testcontainers:testcontainers-mysql'
+    testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
     // Agente do Mockito (recomendado no JDK 21+): carregado via -javaagent em vez de auto-attach dinamico.
-    // commons-compress 1.24.0 (transitiva do Testcontainers, so em teste; fora do BOM): GHSA-4265-ccf5-phj5 e GHSA-4g9r-vxhx-9pgx (corrigidos em 1.26.0).
-    constraints {
-        testImplementation('org.apache.commons:commons-compress:1.28.0') { because 'advisories do OSV na 1.24.0' }
-    }
+    // commons-compress (transitiva do Testcontainers): o 2.0.x ja traz 1.28.0, entao o constraint anterior foi removido.
     mockitoAgent('org.mockito:mockito-core') { transitive = false }
 }
 
