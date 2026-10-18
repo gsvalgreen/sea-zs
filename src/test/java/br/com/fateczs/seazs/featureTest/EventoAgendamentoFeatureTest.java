@@ -29,7 +29,9 @@ public class EventoAgendamentoFeatureTest extends FeatureTestBase {
 				.content("{\"id\":" + evento + "}"))
 				.andExpect(jsonPath("$[0].id").value(agendamento))
 				.andExpect(jsonPath("$[0].evento.nome").value(nomeEvento))
-				.andExpect(jsonPath("$[0].usuarioOrganizador.id").value(organizador));
+				// o corpo indicou "organizador", mas a autoria e do usuario autenticado (o admin do cenario)
+				.andExpect(jsonPath("$[0].usuarioOrganizador.nome").value("Admin"))
+				.andExpect(jsonPath("$[0].usuarioOrganizador.id").value(org.hamcrest.Matchers.not(organizador)));
 		mvc.perform(post("/atividade/listarAgendamento").with(admin()).contentType(MediaType.APPLICATION_JSON)
 				.content("{\"id\":" + agendamento + "}"))
 				.andExpect(status().isOk())

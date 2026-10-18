@@ -40,8 +40,8 @@ public class Agendamento implements Serializable {
 	@JoinColumn(name = "id_evento")
 	private Evento evento;
 	
-	@NotNull
-	@ManyToOne
+	// Opcional no corpo: o organizador e definido no servidor (sub do JWT no inserir; preservado no alterar).
+	@ManyToOne(optional = false)
 	// Leitura aberta a qualquer autenticado: nao devolve dados pessoais do usuario (so id, nome, turno, semestre, tipo e curso).
 	@JsonIgnoreProperties(value = { "email", "endereco", "celular", "dataNasc", "rg", "genero", "matricula", "adm", "hibernateLazyInitializer", "handler" }, allowSetters = true)
 	@JoinColumn(name = "id_usuario_organizador")

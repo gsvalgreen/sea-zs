@@ -1,12 +1,17 @@
 package br.com.fateczs.seazs.unit.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+
+import jakarta.persistence.EntityNotFoundException;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
 
 import br.com.fateczs.seazs.model.Evento;
+import br.com.fateczs.seazs.model.Usuario;
 import br.com.fateczs.seazs.repository.EventoRepository;
 import br.com.fateczs.seazs.service.serviceImpl.EventoServiceImpl;
 
@@ -41,8 +47,10 @@ public class EventoServiceImplTest {
 	@Test
 	public void inserirAlterarExcluirListar() {
 		Evento e = new Evento();
+		e.setId(1);
 		List<Evento> todos = Arrays.asList(e);
 		when(repository.findAll()).thenReturn(todos);
+		when(repository.findById(1)).thenReturn(Optional.of(new Evento()));
 
 		service.inserir(e);
 		service.alterar(e);
@@ -51,6 +59,40 @@ public class EventoServiceImplTest {
 		verify(repository, org.mockito.Mockito.times(2)).save(e);
 		verify(repository).delete(e);
 		assertEquals(todos, service.listar());
+	}
+
+	@Test
+	public void alterarPreservaOCriadorGravadoEIgnoraOdoCorpo() {
+		Usuario gravado = new Usuario();
+		gravado.setId(5);
+		Evento noBanco = new Evento();
+		noBanco.setId(1);
+		noBanco.setUsuarioCriador(gravado);
+		when(repository.findById(1)).thenReturn(Optional.of(noBanco));
+		Usuario falso = new Usuario();
+		falso.setId(99);
+		Evento corpo = new Evento();
+		corpo.setId(1);
+		corpo.setUsuarioCriador(falso);
+
+		service.alterar(corpo);
+
+		ArgumentCaptor<Evento> salvo = ArgumentCaptor.forClass(Evento.class);
+		verify(repository).save(salvo.capture());
+		assertSame(gravado, salvo.getValue().getUsuarioCriador());
+	}
+
+	@Test
+	public void alterarEventoInexistenteOuSemIdLancaEntityNotFoundSemSalvar() {
+		Evento semId = new Evento();
+		Evento inexistente = new Evento();
+		inexistente.setId(7);
+		when(repository.findById(7)).thenReturn(Optional.empty());
+
+		assertThrows(EntityNotFoundException.class, () -> service.alterar(semId));
+		assertThrows(EntityNotFoundException.class, () -> service.alterar(inexistente));
+
+		org.mockito.Mockito.verify(repository, org.mockito.Mockito.never()).save(any(Evento.class));
 	}
 
 	@Test

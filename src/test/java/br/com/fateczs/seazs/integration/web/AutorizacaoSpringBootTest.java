@@ -280,6 +280,37 @@ public class AutorizacaoSpringBootTest {
 		chamar(prof, "/evento/listar", "{}", 200);
 	}
 
+	/** Autoria vem do sub do JWT no inserir e e preservada no alterar; o que o corpo diz sobre o autor e ignorado. */
+	@Test
+	public void autoriaDeEventoEAgendamento_vemDoTokenNoInserirEEPreservadaNoAlterar() throws Exception {
+		Usuario prof = novo("prof", TipoUsuario.PROFESSOR, false);
+		Usuario func = novo("func", TipoUsuario.FUNCIONARIO, false);
+		Evento eventoExistente = atividade.getAgendamento().getEvento();
+
+		// corpo diz que o autor e a Ana; vale o token (prof)
+		chamar(prof, "/evento/inserir", DadosTeste.evento("Evento do prof", ana), 200);
+		chamar(prof, "/agendamento/inserir", DadosTeste.agendamento(eventoExistente, ana, DadosTeste.PASSADO, DadosTeste.FUTURO), 200);
+		Evento inserido = eventos.findAll().stream().filter(e -> "Evento do prof".equals(e.getNome())).findFirst().get();
+		assertEquals(prof.getId(), inserido.getUsuarioCriador().getId());
+		assertEquals(1, agendamentos.findAll().stream().filter(a -> prof.getId().equals(a.getUsuarioOrganizador().getId())).count());
+
+		// o front legado nem precisa enviar o autor
+		chamar(prof, "/evento/inserir", "{\"nome\":\"Sem autor\",\"inicio\":1000,\"fim\":2000}", 200);
+		Evento semAutor = eventos.findAll().stream().filter(e -> "Sem autor".equals(e.getNome())).findFirst().get();
+		assertEquals(prof.getId(), semAutor.getUsuarioCriador().getId());
+
+		// alterar por outro usuario com autor diferente no corpo: autoria gravada nao muda
+		inserido.setNome("Renomeado");
+		inserido.setUsuarioCriador(ana);
+		chamar(func, "/evento/alterar", inserido, 200);
+		assertEquals(prof.getId(), eventos.findById(inserido.getId()).get().getUsuarioCriador().getId());
+
+		Agendamento agendamento = atividade.getAgendamento();
+		agendamento.setUsuarioOrganizador(ana);
+		chamar(func, "/agendamento/alterar", agendamento, 200);
+		assertEquals(admin.getId(), agendamentos.findById(agendamento.getId()).get().getUsuarioOrganizador().getId());
+	}
+
 	@Test
 	public void alunoNaoEscreveEstruturaNenhuma() throws Exception {
 		chamar(ana, "/evento/inserir", DadosTeste.evento("Evento da aluna", ana), 403);

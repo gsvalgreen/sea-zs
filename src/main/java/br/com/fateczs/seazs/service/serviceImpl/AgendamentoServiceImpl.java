@@ -2,6 +2,8 @@ package br.com.fateczs.seazs.service.serviceImpl;
 
 import java.util.List;
 
+import jakarta.persistence.EntityNotFoundException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -42,7 +44,12 @@ public class AgendamentoServiceImpl implements AgendamentoService {
 
 	@Override
 	public void alterar(Agendamento agendamento) {
-		// TODO Auto-generated method stub
+		// O organizador nao muda na alteracao: vale o gravado, nunca o do corpo.
+		Agendamento gravado = agendamento.getId() == null ? null : repository.findById(agendamento.getId()).orElse(null);
+		if (gravado == null) {
+			throw new EntityNotFoundException("Agendamento inexistente");
+		}
+		agendamento.setUsuarioOrganizador(gravado.getUsuarioOrganizador());
 		repository.save(agendamento);
 	}
 

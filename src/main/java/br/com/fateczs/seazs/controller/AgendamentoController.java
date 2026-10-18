@@ -5,6 +5,7 @@ import java.util.List;
 import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -14,6 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import br.com.fateczs.seazs.model.Agendamento;
 import br.com.fateczs.seazs.model.Evento;
+import br.com.fateczs.seazs.model.Usuario;
+import br.com.fateczs.seazs.security.Autorizacao;
 import br.com.fateczs.seazs.service.AgendamentoService;
 
 /**
@@ -28,12 +31,16 @@ public class AgendamentoController {
 	/**
 	 * Acessa o serviço de inserção de Agendamento
 	 * @param agendamento Objeto Agendamento totalmente Preenchido* para Inserts. 
-	 * Atributos de Relacionamento requerem apenas o ID preenchido (exemplo: Id do usuárioOrganizador).
+	 * Atributos de Relacionamento requerem apenas o ID preenchido. O usuarioOrganizador do corpo e opcional e ignorado:
+	 * o organizador e sempre o usuario autenticado (sub do JWT).
 	 */
 	@PreAuthorize("hasAnyRole('ADMIN', 'FUNCIONARIO') or (hasRole('PROFESSOR') and #agendamento.id == null)")
 	@PostMapping("/inserir")
 	@ResponseBody
 	public void inserirAgendamento(@Valid @RequestBody Agendamento agendamento) {
+		Usuario organizador = new Usuario();
+		organizador.setId(autorizacao.idAutenticado().orElseThrow(() -> new AccessDeniedException("Sem usuario autenticado")));
+		agendamento.setUsuarioOrganizador(organizador);
 		agendamentoServ.inserir(agendamento);
 	}
 	
@@ -53,7 +60,8 @@ public class AgendamentoController {
 	 * Acessa o serviço que altera um Agendamento
 	 * @param agendamento Objeto totalmente preenchido para o Update no BD*
 	 * Atributos de Relacionamento requerem apenas o ID. 
-	 * Qualquer atributo da Entidade não preenchido será salvo como null no BD.
+	 * Qualquer atributo da Entidade não preenchido será salvo como null no BD, exceto o usuarioOrganizador, que
+	 * mantem o gravado (o do corpo e ignorado).
 	 */
 	@PreAuthorize("hasAnyRole('ADMIN', 'FUNCIONARIO')")
 	@PostMapping("/alterar")
@@ -110,5 +118,8 @@ public class AgendamentoController {
      */
 	@Autowired
 	private AgendamentoService agendamentoServ;
+
+	@Autowired
+	private Autorizacao autorizacao;
 	
 }

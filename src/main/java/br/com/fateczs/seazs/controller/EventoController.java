@@ -7,6 +7,7 @@ import java.util.List;
 import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,6 +16,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.com.fateczs.seazs.model.Evento;
+import br.com.fateczs.seazs.model.Usuario;
+import br.com.fateczs.seazs.security.Autorizacao;
 import br.com.fateczs.seazs.service.EventoService;
 
 @RestController
@@ -25,6 +28,10 @@ public class EventoController {
 	@PostMapping("/inserir")
 	@ResponseBody
 	public void inserirEvento(@Valid @RequestBody Evento evento) {
+		// O criador e sempre o sub do JWT: o usuarioCriador do corpo (o front legado ainda envia) e ignorado.
+		Usuario criador = new Usuario();
+		criador.setId(autorizacao.idAutenticado().orElseThrow(() -> new AccessDeniedException("Sem usuario autenticado")));
+		evento.setUsuarioCriador(criador);
 		evento.setDataInclusao(new Date(clock.millis()));
 		eventoServ.inserir(evento);
 	}
@@ -73,6 +80,9 @@ public class EventoController {
 	
 	@Autowired
 	private Clock clock;
+
+	@Autowired
+	private Autorizacao autorizacao;
 
 	@Autowired
 	private EventoService eventoServ;

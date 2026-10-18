@@ -6,9 +6,13 @@ import static org.mockito.Mockito.when;
 
 import br.com.fateczs.seazs.model.Agendamento;
 import br.com.fateczs.seazs.model.Evento;
+import br.com.fateczs.seazs.model.Usuario;
+import br.com.fateczs.seazs.security.Autorizacao;
 import br.com.fateczs.seazs.service.AgendamentoService;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import org.springframework.security.access.AccessDeniedException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -22,14 +26,41 @@ public class AgendamentoControllerTest {
 	@Mock
 	private AgendamentoService agendamentoServ;
 
+	@Mock
+	private Autorizacao autorizacao;
+
 	@InjectMocks
 	private AgendamentoController controller;
 
 	@Test
 	public void inserirAgendamentoDelegaParaOService() {
+		when(autorizacao.idAutenticado()).thenReturn(Optional.of(5));
 		Agendamento arg = new Agendamento();
 		controller.inserirAgendamento(arg);
 		verify(agendamentoServ).inserir(arg);
+	}
+
+	@Test
+	public void inserirSobrescreveOOrganizadorDoCorpoComOUsuarioAutenticado() {
+		when(autorizacao.idAutenticado()).thenReturn(Optional.of(5));
+		Usuario falso = new Usuario();
+		falso.setId(99);
+		Agendamento arg = new Agendamento();
+		arg.setUsuarioOrganizador(falso);
+
+		controller.inserirAgendamento(arg);
+
+		assertEquals(Integer.valueOf(5), arg.getUsuarioOrganizador().getId());
+		verify(agendamentoServ).inserir(arg);
+	}
+
+	@Test
+	public void inserirSemUsuarioAutenticadoNegaSemChamarOService() {
+		when(autorizacao.idAutenticado()).thenReturn(Optional.empty());
+
+		assertThrows(AccessDeniedException.class, () -> controller.inserirAgendamento(new Agendamento()));
+
+		org.mockito.Mockito.verifyNoInteractions(agendamentoServ);
 	}
 
 	@Test
