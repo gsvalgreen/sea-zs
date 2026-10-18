@@ -9,7 +9,7 @@ import static br.com.fateczs.seazs.integration.support.DadosTeste.evento;
 import static br.com.fateczs.seazs.integration.support.DadosTeste.staff;
 import static br.com.fateczs.seazs.integration.support.DadosTeste.usuario;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.util.Arrays;
 import java.util.Calendar;
@@ -58,22 +58,29 @@ public class DemaisRepositoriosIntegrationTest extends RepositorioIntegracaoBase
 	// ---- UsuarioRepository
 
 	@Test
-	public void getByEmailAndSenha_retornaUsuarioQuandoCredenciaisConferemExatamente() {
+	public void findByEmail_retornaUsuarioPeloEmail() {
 		em.flush();
 		em.clear();
 
-		assertEquals(ana.getId(), usuarioRepository.getByEmailAndSenha("ana@teste.com", "segredo123").getId());
+		assertEquals(ana.getId(), usuarioRepository.findByEmail("ana@teste.com").get().getId());
 	}
 
 	@Test
-	public void getByEmailAndSenha_devolveNullQuandoSenhaErrada() {
-		assertNull(usuarioRepository.getByEmailAndSenha("ana@teste.com", "errada"));
+	public void findAdministradoresParaAtualizacao_devolveSoQuemTemAdm() {
+		Usuario admin = usuario("admin@teste.com");
+		admin.setAdm(true);
+		em.persist(admin);
+		em.flush();
+		em.clear();
+
+		List<Usuario> admins = usuarioRepository.findAdministradoresParaAtualizacao();
+
+		assertEquals(Arrays.asList(admin.getId()), admins.stream().map(Usuario::getId).collect(java.util.stream.Collectors.toList()));
 	}
 
-	/** Caracterizacao: a senha esta em texto puro e e comparada direto na query (a Fase 2 troca por BCrypt). */
 	@Test
-	public void getByEmailAndSenha_comparaSenhaEmTextoPuroNoBanco() {
-		assertEquals("segredo123", usuarioRepository.findById(ana.getId()).get().getSenha());
+	public void findByEmail_devolveVazioQuandoEmailNaoExiste() {
+		assertFalse(usuarioRepository.findByEmail("nao-existe@teste.com").isPresent());
 	}
 
 	@Test

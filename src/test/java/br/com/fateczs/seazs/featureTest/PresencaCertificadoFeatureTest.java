@@ -46,7 +46,7 @@ public class PresencaCertificadoFeatureTest extends FeatureTestBase {
 		String inscricaoValidada = validarPresenca(idInscricao(usuario), atividade, usuario, papel);
 
 		assertEquals(Integer.valueOf(10), JsonPath.read(inscricaoValidada, "$.pontuacaoRecebida"));
-		mvc.perform(post("/certificado/atividade/emitir").contentType(MediaType.APPLICATION_JSON)
+		mvc.perform(post("/certificado/atividade/emitir").with(admin()).contentType(MediaType.APPLICATION_JSON)
 				.content("{\"atividade\":{\"id\":" + atividade + "},\"usuario\":{\"id\":" + usuario + "},\"papel\":{\"id\":"
 						+ papel + "}}"))
 				.andExpect(status().isOk())
@@ -63,7 +63,7 @@ public class PresencaCertificadoFeatureTest extends FeatureTestBase {
 		int agendamento = criarAgendamento(evento, usuario, agora - 2 * MINUTO, agora + 3 * HORA, 20);
 		inscreverStaffEValidarPresenca(agendamento, usuario, agora);
 
-		mvc.perform(post("/certificado/agendamento/emitir").contentType(MediaType.APPLICATION_JSON)
+		mvc.perform(post("/certificado/agendamento/emitir").with(admin()).contentType(MediaType.APPLICATION_JSON)
 				.content("{\"agendamento\":{\"id\":" + agendamento + "},\"usuario\":{\"id\":" + usuario + "}}"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.nomeEvento").value(nomeEvento))

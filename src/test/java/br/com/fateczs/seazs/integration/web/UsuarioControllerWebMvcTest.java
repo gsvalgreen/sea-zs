@@ -2,17 +2,22 @@ package br.com.fateczs.seazs.integration.web;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static br.com.fateczs.seazs.integration.support.TokensTeste.admin;
+import static br.com.fateczs.seazs.integration.support.TokensTeste.como;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Optional;
 import java.util.TimeZone;
 
 import org.junit.jupiter.api.Test;
@@ -24,7 +29,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import br.com.fateczs.seazs.controller.UsuarioController;
+import br.com.fateczs.seazs.integration.support.ComSeguranca;
 import br.com.fateczs.seazs.integration.support.DadosTeste;
+import br.com.fateczs.seazs.model.dto.LoginLegadoResponse;
+import br.com.fateczs.seazs.service.AuthService;
 import br.com.fateczs.seazs.model.Usuario;
 import br.com.fateczs.seazs.service.UsuarioService;
 
@@ -35,13 +43,18 @@ import br.com.fateczs.seazs.service.UsuarioService;
  * O service e substituido por {@code @MockitoBean}; {@code @WebMvcTest} vem de {@code org.springframework.boot.webmvc.test.autoconfigure}.
  */
 @WebMvcTest(UsuarioController.class)
+@ComSeguranca
 public class UsuarioControllerWebMvcTest {
 
 	@Autowired
 	private MockMvc mvc;
 	@MockitoBean
 	private UsuarioService usuarioService;
+	@MockitoBean
+	private AuthService authService;
 
+	private static final String CORPO_CADASTRO = "{\"email\":\"ana@teste.com\",\"senha\":\"segredo123\",\"nome\":\"Ana\",\"endereco\":\"R\","
+			+ "\"celular\":\"1\",\"dataNasc\":631152000000,\"rg\":\"1\",\"genero\":\"F\"}";
 	private static final String CORPO_USUARIO = "{\"id\":1,\"email\":\"ana@teste.com\",\"senha\":\"segredo123\"}";
 
 	private static Usuario usuarioCompleto() {
@@ -56,7 +69,7 @@ public class UsuarioControllerWebMvcTest {
 
 	@Test
 	public void login_naoExpoeASenhaNaResposta() throws Exception {
-		when(usuarioService.validarLogin(any(Usuario.class))).thenReturn(usuarioCompleto());
+		when(authService.loginLegado(any(), any())).thenReturn(Optional.of(new LoginLegadoResponse(usuarioCompleto(), "jwt-de-teste")));
 
 		mvc.perform(post("/usuario/login").contentType(MediaType.APPLICATION_JSON).content(CORPO_USUARIO))
 				.andExpect(status().isOk())
@@ -64,10 +77,20 @@ public class UsuarioControllerWebMvcTest {
 	}
 
 	@Test
+	public void login_devolveOTokenEmCampoNovoMantendoOsCamposAntigos() throws Exception {
+		when(authService.loginLegado(any(), any())).thenReturn(Optional.of(new LoginLegadoResponse(usuarioCompleto(), "jwt-de-teste")));
+
+		mvc.perform(post("/usuario/login").contentType(MediaType.APPLICATION_JSON).content(CORPO_USUARIO))
+				.andExpect(jsonPath("$.token").value("jwt-de-teste"))
+				.andExpect(jsonPath("$.id").value(1))
+				.andExpect(jsonPath("$.email").value("ana@teste.com"));
+	}
+
+	@Test
 	public void buscar_naoExpoeASenhaNaResposta() throws Exception {
 		when(usuarioService.buscar(any(Usuario.class))).thenReturn(usuarioCompleto());
 
-		mvc.perform(post("/usuario/buscar").contentType(MediaType.APPLICATION_JSON).content(CORPO_USUARIO))
+		mvc.perform(post("/usuario/buscar").with(admin()).contentType(MediaType.APPLICATION_JSON).content(CORPO_USUARIO))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.senha").doesNotExist());
 	}
@@ -78,7 +101,7 @@ public class UsuarioControllerWebMvcTest {
 		outro.setSenha("outraSenha");
 		when(usuarioService.listar()).thenReturn(Arrays.asList(usuarioCompleto(), outro));
 
-		mvc.perform(post("/usuario/listar"))
+		mvc.perform(post("/usuario/listar").with(admin()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].senha").doesNotExist())
 				.andExpect(jsonPath("$[1].senha").doesNotExist());
@@ -88,7 +111,7 @@ public class UsuarioControllerWebMvcTest {
 
 	@Test
 	public void login_serializaEnumsPeloNomeEOsDemaisCamposPeloNomeDaPropriedade() throws Exception {
-		when(usuarioService.validarLogin(any(Usuario.class))).thenReturn(usuarioCompleto());
+		when(authService.loginLegado(any(), any())).thenReturn(Optional.of(new LoginLegadoResponse(usuarioCompleto(), "jwt-de-teste")));
 
 		mvc.perform(post("/usuario/login").contentType(MediaType.APPLICATION_JSON).content(CORPO_USUARIO))
 				.andExpect(jsonPath("$.id").value(1))
@@ -107,7 +130,7 @@ public class UsuarioControllerWebMvcTest {
 		utc.clear();
 		utc.set(2020, Calendar.JUNE, 15, 15, 0, 0);
 		u.setDataNasc(utc.getTime());
-		when(usuarioService.validarLogin(any(Usuario.class))).thenReturn(u);
+		when(authService.loginLegado(any(), any())).thenReturn(Optional.of(new LoginLegadoResponse(u, "jwt-de-teste")));
 
 		mvc.perform(post("/usuario/login").contentType(MediaType.APPLICATION_JSON).content(CORPO_USUARIO))
 				.andExpect(jsonPath("$.dataNasc").value("2020-06-15T12:00:00.000-03:00"));
@@ -115,7 +138,7 @@ public class UsuarioControllerWebMvcTest {
 
 	@Test
 	public void login_comCredenciaisInvalidas_respondeOkComCorpoVazio() throws Exception {
-		when(usuarioService.validarLogin(any(Usuario.class))).thenReturn(null);
+		when(authService.loginLegado(any(), any())).thenReturn(Optional.empty());
 
 		mvc.perform(post("/usuario/login").contentType(MediaType.APPLICATION_JSON).content(CORPO_USUARIO))
 				.andExpect(status().isOk())
@@ -124,13 +147,11 @@ public class UsuarioControllerWebMvcTest {
 
 	@Test
 	public void login_aceitaSenhaNoCorpoDaRequisicao() throws Exception {
-		when(usuarioService.validarLogin(any(Usuario.class))).thenReturn(null);
+		when(authService.loginLegado(any(), any())).thenReturn(Optional.empty());
 
 		mvc.perform(post("/usuario/login").contentType(MediaType.APPLICATION_JSON).content(CORPO_USUARIO));
 
-		ArgumentCaptor<Usuario> capturado = ArgumentCaptor.forClass(Usuario.class);
-		verify(usuarioService).validarLogin(capturado.capture());
-		assertEquals("segredo123", capturado.getValue().getSenha());
+		verify(authService).loginLegado("ana@teste.com", "segredo123");
 	}
 
 	// ---- Validacao e mass assignment (caracterizacao) -------------------------------------------
@@ -144,19 +165,17 @@ public class UsuarioControllerWebMvcTest {
 	}
 
 	/**
-	 * Caracterizacao (mass assignment): o cadastro publico aceita `adm` e `tipoUsuario` enviados pelo cliente.
-	 * A Fase 2 (seguranca) deve forcar esses campos no servidor; este teste entao deve ser invertido.
+	 * O controller so repassa o corpo ao service; quem ignora `adm`/`tipoUsuario` do cliente e o service
+	 * (UsuarioServiceImplTest) e o efeito ponta a ponta esta em AutenticacaoSpringBootTest.
 	 */
 	@Test
-	public void inserir_hoje_aceitaAdmETipoUsuarioEnviadosPeloCliente() throws Exception {
-		String corpo = "{\"email\":\"x@teste.com\",\"senha\":\"s\",\"adm\":true,\"tipoUsuario\":\"PROFESSOR\"}";
-
-		mvc.perform(post("/usuario/inserir").contentType(MediaType.APPLICATION_JSON).content(corpo))
-				.andExpect(status().isOk());
-
-		ArgumentCaptor<Usuario> capturado = ArgumentCaptor.forClass(Usuario.class);
-		verify(usuarioService).inserir(capturado.capture());
-		assertTrue(capturado.getValue().getAdm());
+	public void inserir_comSenhaEmBranco_respondeBadRequest() throws Exception {
+		for (String senha : new String[] { "", "   " }) {
+			String corpo = "{\"email\":\"x@teste.com\",\"senha\":\"" + senha + "\"}";
+			mvc.perform(post("/usuario/inserir").contentType(MediaType.APPLICATION_JSON).content(corpo))
+					.andExpect(status().isBadRequest());
+		}
+		verify(usuarioService, never()).inserir(any(Usuario.class));
 	}
 
 	@Test
@@ -165,5 +184,64 @@ public class UsuarioControllerWebMvcTest {
 
 		mvc.perform(post("/usuario/inserir").contentType(MediaType.APPLICATION_JSON).content(corpo))
 				.andExpect(status().isBadRequest());
+	}
+
+	// ---- Seguranca das rotas legadas (passo 2a) ---------------------------------------------------
+
+	/**
+	 * Documenta o estado do passo 2a: as rotas legadas seguem ABERTAS (o front atual nao envia Bearer).
+	 * TODO(2b): ao fechar por RBAC, este teste deve ser invertido (401 sem token).
+	 */
+	@Test
+	public void rotaLegada_semToken_responde401EmProblemJson() throws Exception {
+		mvc.perform(post("/usuario/listar"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(content().contentTypeCompatibleWith("application/problem+json"));
+	}
+
+	@Test
+	public void rotaLegada_comPerfilSemPermissao_responde403() throws Exception {
+		mvc.perform(post("/usuario/listar").with(como(7, "ROLE_ALUNO")))
+				.andExpect(status().isForbidden())
+				.andExpect(content().contentTypeCompatibleWith("application/problem+json"));
+	}
+
+	@Test
+	public void rotaLegada_comBearerInvalido_respondeUnauthorizedEmProblemJson() throws Exception {
+		mvc.perform(post("/usuario/listar").header("Authorization", "Bearer lixo"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(content().contentTypeCompatibleWith("application/problem+json"));
+	}
+
+	@Test
+	public void preflightDoLoginLegado_deOrigemPermitida_ehAceito() throws Exception {
+		mvc.perform(options("/usuario/login").header("Origin", "http://localhost:4200")
+				.header("Access-Control-Request-Method", "POST")
+				.header("Access-Control-Request-Headers", "content-type"))
+				.andExpect(status().isOk())
+				.andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:4200"));
+	}
+
+	@Test
+	public void inserir_comEmailDuplicado_responde409GenericoSemEcoarOEmail() throws Exception {
+		org.mockito.Mockito.doThrow(new br.com.fateczs.seazs.service.EmailJaCadastradoException(new RuntimeException("Duplicate entry 'ana@teste.com'")))
+				.when(usuarioService).inserir(any(Usuario.class));
+
+		mvc.perform(post("/usuario/inserir").contentType(MediaType.APPLICATION_JSON).content(CORPO_CADASTRO))
+				.andExpect(status().isConflict())
+				.andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+				.andExpect(jsonPath("$.status").value(409))
+				.andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("ana@teste.com"))))
+				.andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Duplicate"))));
+	}
+
+	@Test
+	public void excluir_ultimoAdministradorRecusadoResponde409() throws Exception {
+		org.mockito.Mockito.doThrow(new br.com.fateczs.seazs.service.PerfilInvalidoException("nao e possivel excluir o ultimo administrador"))
+				.when(usuarioService).excluir(any(Usuario.class));
+
+		mvc.perform(post("/usuario/excluir").with(admin()).contentType(MediaType.APPLICATION_JSON).content(CORPO_USUARIO))
+				.andExpect(status().isConflict())
+				.andExpect(jsonPath("$.detail").value("nao e possivel excluir o ultimo administrador"));
 	}
 }

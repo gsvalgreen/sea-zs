@@ -1,5 +1,94 @@
 # Plano: modernização da stack, segurança e API orientada a telas (sea-zs)
 
+## Checklist de progresso
+
+Legenda: `[x]` feito, revisado (`revisor-codigo`) e com passada de `seguranca-codigo-limpo`; `[~]` em andamento; `[ ]` pendente.
+Última atualização: 2026-10-18 (Fase 2 concluída; Fase 3 fica para a próxima sessão). Tudo está em branches locais (nada foi enviado ao GitHub, nenhum PR aberto).
+
+**Estado das branches (repositório local)**
+- `master`: intacta, sem nada deste trabalho.
+- `modernizacao`: integra apenas a Fase 0 (hotfix + CI/devops). Está atrasada.
+- `feat/fase1-stack`: Fase 0 completa + Fase 1 inteira (6 passos).
+- `feat/fase2-seguranca`: parte de `feat/fase1-stack`; contém a Fase 2 completa (2a, 2b e correções vindas do 2c no backend; HEAD `67abeb5`, `clean check` verde: 331+ unit, integration e 18 featureTest).
+- Frontend (repositório separado, local em `../sea-zs-angular`): branch `feat/integracao-seguranca-backend` (2c), a partir de `aacea27`; sem push.
+- Trabalho feito no worktree `.claude/worktrees/agent-a6c1b76aff9a45895`. Sugestão: um PR por fase, com squash-merge (alguns commits intermediários não compilam sozinhos).
+
+### Fase 0, preparação
+- [x] Hotfix: `Usuario.senha` WRITE_ONLY, credenciais do banco por `${DB_*}`, remoção de `System.out` com dados sensíveis
+- [x] docker-compose do MySQL, `.env.example`, README
+- [x] CI no GitHub Actions: build, testes, JaCoCo com gate de cobertura, Sonar (workflow criado e revisado)
+- [x] Baseline de testes: unit, integration (H2) e featureTest (Testcontainers com MySQL real) no padrão da pirâmide
+- [x] `java.time.Clock` injetável (semestres testados de forma determinística)
+
+### Fase 1, stack incremental
+- [x] 1. `build.gradle` limpo, Gradle 6.9
+- [x] 2. Boot 2.7, Java 17, JUnit 5, MySQL 8.4, `mysql-connector-j`
+- [x] 3. Boot 3.5: `jakarta.*`, `getReferenceById`, `GenerationType.IDENTITY`
+- [x] 4. Java 25 e Gradle 9.8
+- [x] 5. Boot 4.1.1 (Spring 7, Hibernate 7, Jackson 3, JUnit 6, Testcontainers 2)
+- [x] 6. Flyway (`V1__baseline.sql`) com `ddl-auto=validate` fora do ambiente local
+
+### Fase 2, segurança
+- [x] 2a. Autenticação: Spring Security 7, JWT HS256, refresh token rotativo, BCrypt com migração de senhas legadas, `/api/v1/auth/*`, CORS global, `equals/hashCode` de `Usuario` por `id`, cadastro público sem escalada de privilégio, 409 para e-mail duplicado
+- [x] 2b. Autorização: default-deny, matriz de perfis por endpoint, ownership/IDOR, promoção de perfil por admin (`PUT /api/v1/usuarios/{id}/perfil`), correção do 409 vs. campo obrigatório ausente. IMPLEMENTADO (commits 9a9a6fd, f236fab, 6c18719; 331 unit + 127 integration + 18 featureTest verdes). O `revisor-codigo` REPROVOU; achados B1, I1 a I4 e S1 a S4 CORRIGIDOS (ver abaixo) e matriz nova (ADMIN/FUNCIONARIO escrevem estruturas; PROFESSOR só cria evento/agendamento/atividade) aplicada. Passada do `seguranca-codigo-limpo` FEITA (achados abaixo); o `revisor-codigo` revisou as alterações dela e APROVOU COM RESSALVAS (ressalvas atendidas). 2b CONCLUÍDO
+- [x] Autoria (`usuarioCriador`/`usuarioOrganizador`) vem do `sub` do JWT no inserir (id do corpo ignorado) e é preservada no alterar; alterar com id inexistente é 404 (revisado e aprovado)
+- [x] 2b. Rate limit por IP e lockout progressivo por e-mail (implementação própria em memória, sem Bucket4j), 429 com `Retry-After` (revisado pelo `revisor-codigo`, aprovado com ressalvas, e passado pelo `seguranca-codigo-limpo`)
+- [x] 2c. CONCLUÍDO (revisado pelo `revisor-codigo`, aprovado com ressalvas atendidas; passada do `seguranca-codigo-limpo` feita). Frontend (`sea-zs-angular`, subagent `dev-frontend`, sem modernizar a stack do front): `type="password"`, interceptor Bearer, guard de rota, `environment.apiUrl`, não persistir dados pessoais, tratamento de falha de login, tratar a mudança de data `-0300` para `-03:00`
+  - Achados do front no backend (2c), tratados: `Retry-After` agora exposto no CORS (`Access-Control-Expose-Headers`, sem curinga); claim `name` no JWT de acesso (so o nome; o front deixa de perder o nome ao recarregar; vale ate o token expirar); documentacao confere MySQL 8.4 (Dockerfile, compose, README, CLAUDE.md); 500 com stack trace NAO reproduzido no backend (teste de servidor real garante ausencia de trace/SQL/mensagem): provavel instancia/versao antiga ou perfil com `server.error.include-*` sobrescrito (nao verificado), reabrir se reaparecer com a versao atual
+  - Itens do front que viram Fase 3: endpoint "meus dados" para o `form-usuario-log`; `IAgendamento.usuarioOrganizador` como string; radios de tipo de usuario sem efeito; refresh proativo do access token; `apiUrl` de producao; `ng build --prod` ja quebrado antes da integracao; testes antigos do front falhando
+  - Dividas da passada de seguranca do front (2c; sem correcao por exigirem mudanca ampla ou da stack): (1) access e refresh token em `sessionStorage` ficam legiveis por qualquer XSS; mitigar na Fase 3 com refresh em cookie HttpOnly+SameSite (exige mudanca no backend) e CSP; (2) `npm audit --omit=dev` aponta 6 advisories (4 altos em `@angular/common`/`compiler`/`core`/`router` 6.1.0, corrigidos so em Angular 19.2.26+ ou 20+; 2 moderados em `bootstrap` 4.1.3 e `jquery` 3.3.1): relevantes sobretudo se o app passar a renderizar HTML dinamico (hoje nao ha `innerHTML` nem `bypassSecurityTrust*`); resolver ao modernizar o front; (3) RESOLVIDO: o front envia `usuarioCriador` no corpo de `/evento/inserir`, mas o backend usa sempre o `sub` do token e ignora o campo (idem `usuarioOrganizador` em `/agendamento/inserir`; no alterar o autor gravado e preservado); (4) o checkbox 'Lembrar-me' do login nao faz nada (sessao so em `sessionStorage`); remover ou implementar; (5) 12 de 35 specs do front falham (specs gerados pelo CLI sem providers/imports; 12 ja falhavam antes da integracao, confirmado no baseline aacea27); os 23 novos de auth/datas passam; (6) `console.log` de dados de tela em `form-evento`, `form-curso`, `painel-eventos`, `consulta-evento` (anteriores a integracao) e `href` de exemplo (`facebook.com`, `google.com`) em `form-curso`
+- [ ] Remover `{noop}` do encoder quando `select count(*) from tb_usuario where senha not like '{bcrypt}%'` retornar 0
+
+**Achados da revisão do 2b (a corrigir ANTES de seguir; o `dev-backend` é o autor)**
+- [x] B1 (BLOQUEANTE): o rate limit por IP é contornável com byte codificado na URL (`POST /usuario/%6cogin`, `/api/v1/auth/%6cogin`): `LimiteTentativasInterceptor` usa `getRequestURI()` (não decodificado) como chave do escopo. Resolver pelo caminho decodificado/normalizado (ex.: `UrlPathHelper`/`ServletRequestPathUtils`) e testar que `/usuario/%6cogin` também dá 429. Escrever o teste antes da correção (deve falhar)
+- [x] I1: falha aberta no limitador: IPv6 por endereço completo (um /64 contorna) e, com o teto de 100000 entradas cheio, IPs/e-mails novos deixam de ser limitados. Agrupar IPv6 por /64, evictar expirados antes de desistir, falhar fechado no escopo de login
+- [x] I2: a chave do lockout (trim + minúsculas) não acompanha a collation `utf8mb4_unicode_ci` do banco (acentos e caracteres ignoráveis autenticam a mesma conta). Normalizar (NFKD, sem marcas/ignoráveis) ou chavear pelo id do usuário resolvido
+- [x] I3: corrida entre `exigirLiberado` e `registrarFalha` (rajada acima do limite) e varredura que pode perder contagem. Reservar a tentativa atomicamente (`compute`)
+- [x] I4: proteção da última conta ADMIN: hoje só bloqueia o auto-rebaixamento; dois admins podem se rebaixar em paralelo e o admin pode se excluir via `/usuario/excluir`. Contar admins com lock e recusar se sobrar zero
+- [x] S1: refresh tokens revogados ao mudar perfil (`alterarPerfil`) ou senha (`alterar`). [~] S2: `/usuario/alterar` segue sem exigir a senha atual (exigir seria quebra de contrato legado; documentado no README, resolver no `/api/v1` da Fase 3)
+- [x] S3: o login legado pode devolver 429 (status novo no contrato legado): mantido e documentado no README; o front trata no 2c
+- [x] S4: `ControllersProtegidosTest` não detecta `@PreAuthorize("permitAll()")` nem controller fora do pacote `controller`; faltam testes de caminho codificado e IPv6
+
+**Passada de segurança e código limpo do 2b (`seguranca-codigo-limpo`)**
+- [x] I-2: lost update entre `UsuarioServiceImpl.alterar` e `alterarPerfil`. `alterar` agora copia só os dados cadastrais para a entidade gravada e `Usuario` é `@DynamicUpdate` (o UPDATE não regrava `adm`/`tipoUsuario`); teste unitário
+- [x] I-1: teste de concorrência do último ADMIN (`UltimoAdministradorConcorrenciaSpringBootTest`, H2, duas threads, 15 rodadas; falha sem o `@Lock`, passa com ele). Fidelidade ao InnoDB (MySQL) ainda não verificada: [ ] repetir como featureTest com MySQL (Testcontainers)
+- [x] S-2 (README do lockout), S-3 (assert real ao excluir vínculo), S-4 (IP por contador no lugar de `Math.random()`)
+- [ ] Dívida: `/usuario/alterar` trocando o e-mail para um já cadastrado gera `DataIntegrityViolationException` (500); mapear para 409 como no cadastro (Fase 3)
+
+### Fase 3, API orientada a telas (`/api/v1`)
+- [ ] DTOs, `@RestControllerAdvice` com `ProblemDetail`, exceções de domínio (404/409/422)
+- [ ] Mappers (MapStruct) e paginação
+- [ ] `open-in-view=false`, `fetch = LAZY` nos `@ManyToOne`, `@EntityGraph`/projeções, `findById` com 404 no lugar de proxy
+- [ ] Endpoints por tela: painel, detalhe do evento, forms, minha área, inscrição, presença, certificado, crachá, inscritos, relatório
+- [ ] springdoc/OpenAPI e cliente TypeScript gerado
+- [ ] Migrar o front tela por tela, depreciar e remover os endpoints antigos; decidir o destino do `Gerenciamento*`
+- [ ] `@Temporal` deprecado no Hibernate 7 (9 campos `Date`): migrar para `java.time` junto com os DTOs, avaliando o tipo da coluna
+
+### Pendências e decisões em aberto
+- [ ] Rodar o CI no GitHub pela primeira vez (nunca executou): conferir `setup-java` 25, Testcontainers no runner e se o Sonar aceita `sonar.java.source=25`
+- [ ] Configurar no GitHub: secret `SONAR_TOKEN`; variáveis `SONAR_ORGANIZATION` e `SONAR_PROJECT_KEY`
+- [ ] Definir `JWT_SECRET` (mínimo de 32 bytes) em cada ambiente; em produção `DDL_AUTO=validate`, `FLYWAY_ENABLED=true`, `SHOW_SQL=false`
+- [ ] Usuário de banco da aplicação (DML) separado do usuário de migração (DDL); remover `root/system` fora do dev local
+- [ ] Banco legado existente: comparar com o `V1` e usar `FLYWAY_BASELINE_ON_MIGRATE=true` só no primeiro deploy
+- [ ] Fixar as actions do CI por SHA (o Dependabot já está configurado)
+- [ ] Remover os overrides de Tomcat e Jackson no `build.gradle` quando o BOM do Boot trouxer versões iguais ou maiores
+- [ ] Avançar a branch `modernizacao`, abrir os PRs e fazer squash-merge
+- [ ] Rate limit/lockout em memória não serve para várias instâncias e zera ao reiniciar (futuro: Redis ou JDBC)
+- [ ] Dívidas herdadas apontadas no 2b: `certificado/emitir` dá NPE/500 para ADMIN quando o registro não existe; `usuario/buscar` exige e-mail e senha no corpo; `Curso(String)` quebra a desserialização; services sem `@Transactional` (Fase 3)
+- [x] Decisão 1 (resolvida): ADMIN e FUNCIONARIO escrevem estruturas; PROFESSOR só cria evento, agendamento e atividade (matriz no README)
+- [x] Decisão 2 (resolvida): cadastro público sempre VISITANTE/`adm=false`
+- [x] Autoria de evento/agendamento vem do `sub` do JWT no inserir e é preservada no alterar (corpo ignorado)
+- [ ] O JSON de `Evento.usuarioCriador` e `Agendamento.usuarioOrganizador` não traz mais dados pessoais: conferir o impacto no front (2c)
+- [ ] Revisar `docs/PLANO-MODERNIZACAO.md` e o `CLAUDE.md` no fim de cada fase
+
+### Como retomar
+1. `cd` para o worktree acima e `git checkout feat/fase2-seguranca`.
+2. Variáveis de ambiente para os featureTest no Colima: `DOCKER_HOST=unix://$HOME/.colima/default/docker.sock`, `TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock`, `JAVA_HOME=$HOME/.sdkman/candidates/java/25.0.4+1.1-tem`.
+3. `CI=true ./gradlew clean check` deve estar verde antes de continuar.
+4. Fluxo por tarefa: autor (`dev-backend`/`qa-testes`/`devops`/`dev-frontend`) → `revisor-codigo` → `seguranca-codigo-limpo` → `revisor-codigo` nas alterações → integração local.
+
+---
+
 ## O que estudar antes de implementar
 
 **Plataforma e build**
@@ -102,6 +191,7 @@ Resultado esperado: stack em Java 25 + Boot 4.x (via 3.5.x), autenticação com 
 6. Flyway com `ddl-auto=validate` nos ambientes não locais; Testcontainers no featureTest. (Feito: `V1__baseline.sql`, `FLYWAY_ENABLED`/`DDL_AUTO`, featureTest com Flyway + `validate`.)
 
 ### Fase 2, segurança
+- Passo 2a (autenticação) implementado: JWT HS256 + refresh rotativo, BCrypt com migração de senhas, CORS global, `equals/hashCode` de `Usuario` por `id`. Pendentes: 2b (RBAC e fechamento das rotas legadas, mass assignment, IDOR), rate limit/lockout de login, limpeza periódica de refresh tokens expirados, front.
 - `spring-boot-starter-security`, `DelegatingPasswordEncoder` (BCrypt), `UserDetailsService` por e-mail.
 - Migração de senhas: prefixo `{noop}` nas existentes + rehash no próximo login (`upgradeEncoding`) ou reset.
 - `POST /api/v1/auth/login` -> JWT de vida curta (+ refresh), 401 genérico, rate limit/lockout.

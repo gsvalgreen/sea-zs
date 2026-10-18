@@ -2,6 +2,8 @@ package br.com.fateczs.seazs.service.serviceImpl;
 
 import java.util.List;
 
+import jakarta.persistence.EntityNotFoundException;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -30,7 +32,13 @@ public class EventoServiceImpl implements EventoService {
 
 	@Override
 	public void alterar(Evento evento) {
-		// TODO Auto-generated method stub
+		// A autoria nao muda na alteracao: vale o criador gravado, nunca o do corpo.
+		Evento gravado = evento.getId() == null ? null : repository.findById(evento.getId()).orElse(null);
+		if (gravado == null) {
+			throw new EntityNotFoundException("Evento inexistente");
+		}
+		evento.setUsuarioCriador(gravado.getUsuarioCriador());
+		evento.setDataInclusao(gravado.getDataInclusao());
 		repository.save(evento);
 	}
 

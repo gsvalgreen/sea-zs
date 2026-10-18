@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.Calendar;
 import java.util.List;
+import java.util.Optional;
 
 public interface InscricaoRepository extends JpaRepository<Inscricao, Integer> {
 	
@@ -41,5 +42,9 @@ public interface InscricaoRepository extends JpaRepository<Inscricao, Integer> {
 
 	@Query(value =	"select i from Inscricao i where i.usuario.id = ?1 and  i.atividade.id = ?2")
 	Inscricao findByUsuarioIdAndAtividadeId(Integer usuarioId, Integer atividadeId);
+
+	/** Dono de uma inscricao gravada (usado na checagem de posse). */
+	@Query("select i.usuario.id from Inscricao i where i.sequencialInscricao = ?1")
+	Optional<Integer> findIdUsuarioBySequencial(Integer sequencialInscricao);
 
 }

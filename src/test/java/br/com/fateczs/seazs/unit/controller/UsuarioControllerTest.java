@@ -6,9 +6,12 @@ import static org.mockito.Mockito.when;
 
 import br.com.fateczs.seazs.model.CrachaUsuario;
 import br.com.fateczs.seazs.model.Usuario;
+import br.com.fateczs.seazs.model.dto.LoginLegadoResponse;
+import br.com.fateczs.seazs.service.AuthService;
 import br.com.fateczs.seazs.service.UsuarioService;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -21,6 +24,9 @@ public class UsuarioControllerTest {
 
 	@Mock
 	private UsuarioService usuServ;
+
+	@Mock
+	private AuthService authService;
 
 	@InjectMocks
 	private UsuarioController controller;
@@ -64,12 +70,22 @@ public class UsuarioControllerTest {
 	}
 
 	@Test
-	public void loginUsuarioDelegaParaOService() {
+	public void loginUsuarioDelegaEmailESenhaParaOAuthService() {
 		Usuario arg = new Usuario();
-		Usuario esperado = new Usuario();
-		when(usuServ.validarLogin(arg)).thenReturn(esperado);
+		arg.setEmail("a@b.com");
+		arg.setSenha("123");
+		LoginLegadoResponse esperado = new LoginLegadoResponse(new Usuario(), "tok");
+		when(authService.loginLegado("a@b.com", "123")).thenReturn(Optional.of(esperado));
 		assertSame(esperado, controller.loginUsuario(arg));
-		verify(usuServ).validarLogin(arg);
+	}
+
+	@Test
+	public void loginUsuarioDevolveNuloQuandoCredenciaisInvalidas() {
+		Usuario arg = new Usuario();
+		arg.setEmail("a@b.com");
+		arg.setSenha("errada");
+		when(authService.loginLegado("a@b.com", "errada")).thenReturn(Optional.empty());
+		assertNull(controller.loginUsuario(arg));
 	}
 
 	@Test

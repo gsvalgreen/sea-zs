@@ -25,12 +25,13 @@ public class EventoAgendamentoFeatureTest extends FeatureTestBase {
 		String nomeAtividade = unico("Atividade");
 		int atividade = criarAtividade(nomeAtividade, agendamento, agora + DIA, agora + DIA + HORA, false);
 
-		mvc.perform(post("/agendamento/listarEvento").contentType(MediaType.APPLICATION_JSON)
+		mvc.perform(post("/agendamento/listarEvento").with(admin()).contentType(MediaType.APPLICATION_JSON)
 				.content("{\"id\":" + evento + "}"))
 				.andExpect(jsonPath("$[0].id").value(agendamento))
 				.andExpect(jsonPath("$[0].evento.nome").value(nomeEvento))
-				.andExpect(jsonPath("$[0].usuarioOrganizador.id").value(organizador));
-		mvc.perform(post("/atividade/listarAgendamento").contentType(MediaType.APPLICATION_JSON)
+				// o corpo indicou "organizador", mas a autoria e do usuario autenticado (o admin do cenario)
+				.andExpect(jsonPath("$[0].usuarioOrganizador.nome").value("Admin"));
+		mvc.perform(post("/atividade/listarAgendamento").with(admin()).contentType(MediaType.APPLICATION_JSON)
 				.content("{\"id\":" + agendamento + "}"))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].id").value(atividade))

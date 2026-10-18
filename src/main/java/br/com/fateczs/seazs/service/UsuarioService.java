@@ -4,6 +4,7 @@ import java.util.List;
 
 import br.com.fateczs.seazs.model.CrachaUsuario;
 import br.com.fateczs.seazs.model.Usuario;
+import br.com.fateczs.seazs.utils.TipoUsuario;
 
 public interface UsuarioService {
 
@@ -17,8 +18,17 @@ public interface UsuarioService {
 	
 	List<Usuario> listar();
 	
-	Usuario validarLogin(Usuario usuario);
-
 	CrachaUsuario emitirCracha(Usuario usuario);
+
+	/**
+	 * Define o perfil ({@code tipoUsuario}) e o flag {@code adm} de um usuario. Unico caminho que altera esses
+	 * campos; o chamador ja foi autorizado como ADMIN. Registra em log quem mudou o perfil de quem (so ids).
+	 *
+	 * @throws UsuarioNaoEncontradoException se o id nao existe
+	 * @throws PerfilInvalidoException       se o proprio administrador tentar retirar o seu {@code adm} ou se a
+	 *                                       mudanca deixaria o sistema sem nenhum administrador (revoga tambem os
+	 *                                       refresh tokens do usuario)
+	 */
+	Usuario alterarPerfil(Integer id, TipoUsuario tipoUsuario, boolean adm, Integer idAutor);
 	
 }
