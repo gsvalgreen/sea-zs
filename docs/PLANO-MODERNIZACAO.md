@@ -29,10 +29,20 @@ Legenda: `[x]` feito, revisado (`revisor-codigo`) e com passada de `seguranca-co
 
 ### Fase 2, segurança
 - [x] 2a. Autenticação: Spring Security 7, JWT HS256, refresh token rotativo, BCrypt com migração de senhas legadas, `/api/v1/auth/*`, CORS global, `equals/hashCode` de `Usuario` por `id`, cadastro público sem escalada de privilégio, 409 para e-mail duplicado
-- [~] 2b. Autorização: default-deny, matriz de perfis por endpoint, ownership/IDOR, promoção de perfil por admin (`PUT /api/v1/usuarios/{id}/perfil`), correção do 409 vs. campo obrigatório ausente. IMPLEMENTADO (commits 9a9a6fd, f236fab, 6c18719; 315 unit + 118 integration + 17 featureTest verdes). FALTA: revisão do `revisor-codigo` e passada do `seguranca-codigo-limpo`
+- [~] 2b. Autorização: default-deny, matriz de perfis por endpoint, ownership/IDOR, promoção de perfil por admin (`PUT /api/v1/usuarios/{id}/perfil`), correção do 409 vs. campo obrigatório ausente. IMPLEMENTADO (commits 9a9a6fd, f236fab, 6c18719; 315 unit + 118 integration + 17 featureTest verdes). O `revisor-codigo` REPROVOU (ver 'Achados da revisão do 2b' abaixo): corrigir B1 e I1 a I4, pedir nova revisão e só então a passada do `seguranca-codigo-limpo`
 - [x] 2b. Rate limit por IP e lockout progressivo por e-mail (implementação própria em memória, sem Bucket4j), 429 com `Retry-After` (revisão e passada de segurança pendentes, como o item acima)
 - [ ] 2c. Frontend (`sea-zs-angular`, subagent `dev-frontend`, sem modernizar a stack do front): `type="password"`, interceptor Bearer, guard de rota, `environment.apiUrl`, não persistir dados pessoais, tratamento de falha de login, tratar a mudança de data `-0300` para `-03:00`
 - [ ] Remover `{noop}` do encoder quando `select count(*) from tb_usuario where senha not like '{bcrypt}%'` retornar 0
+
+**Achados da revisão do 2b (a corrigir ANTES de seguir; o `dev-backend` é o autor)**
+- [ ] B1 (BLOQUEANTE): o rate limit por IP é contornável com byte codificado na URL (`POST /usuario/%6cogin`, `/api/v1/auth/%6cogin`): `LimiteTentativasInterceptor` usa `getRequestURI()` (não decodificado) como chave do escopo. Resolver pelo caminho decodificado/normalizado (ex.: `UrlPathHelper`/`ServletRequestPathUtils`) e testar que `/usuario/%6cogin` também dá 429. Escrever o teste antes da correção (deve falhar)
+- [ ] I1: falha aberta no limitador: IPv6 por endereço completo (um /64 contorna) e, com o teto de 100000 entradas cheio, IPs/e-mails novos deixam de ser limitados. Agrupar IPv6 por /64, evictar expirados antes de desistir, falhar fechado no escopo de login
+- [ ] I2: a chave do lockout (trim + minúsculas) não acompanha a collation `utf8mb4_unicode_ci` do banco (acentos e caracteres ignoráveis autenticam a mesma conta). Normalizar (NFKD, sem marcas/ignoráveis) ou chavear pelo id do usuário resolvido
+- [ ] I3: corrida entre `exigirLiberado` e `registrarFalha` (rajada acima do limite) e varredura que pode perder contagem. Reservar a tentativa atomicamente (`compute`)
+- [ ] I4: proteção da última conta ADMIN: hoje só bloqueia o auto-rebaixamento; dois admins podem se rebaixar em paralelo e o admin pode se excluir via `/usuario/excluir`. Contar admins com lock e recusar se sobrar zero
+- [ ] S1/S2 (sugestões): revogar refresh tokens ao mudar perfil ou senha; `/usuario/alterar` não exige a senha atual
+- [ ] S3: o login legado pode devolver 429 (status novo no contrato legado): confirmar com o front no 2c
+- [ ] S4: `ControllersProtegidosTest` não detecta `@PreAuthorize("permitAll()")` nem controller fora do pacote `controller`; faltam testes de caminho codificado e IPv6
 
 ### Fase 3, API orientada a telas (`/api/v1`)
 - [ ] DTOs, `@RestControllerAdvice` com `ProblemDetail`, exceções de domínio (404/409/422)
