@@ -23,7 +23,6 @@ public class AtividadeController {
 	@PostMapping("/inserir")
 	@ResponseBody
 	public void inserirAtividade(@Valid @RequestBody Atividade atividade) {
-		System.out.println(atividade.toString());
 		atividadeServ.inserir(atividade);
 	}
 	

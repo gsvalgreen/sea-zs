@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+# Cancela execucoes antigas apenas em PRs; em push para master todas completam.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: system
+          MYSQL_DATABASE: seazs
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -psystem --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Nao deixa o GITHUB_TOKEN no .git/config: o build executa codigo do PR.
+          persist-credentials: false
+          # Sonar precisa do historico completo para blame/novo codigo.
+          fetch-depth: 0
+
+      # Java 8 (igual ao .sdkmanrc; Gradle 4.5 nao roda em JDK mais novo).
+      # Ao migrar para Java 17/25, ajustar java-version manualmente.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+          # gradle/actions/setup-gradle nao suporta Gradle 4.5; cache via setup-java.
+          cache: gradle
+
+      - name: Build, testes e cobertura (JaCoCo)
+        # `build` executa test, jacocoTestReport (finalizedBy) e
+        # jacocoTestCoverageVerification (check.dependsOn no build.gradle):
+        # falha abaixo do limiar. O SONAR_TOKEN nao e exposto a este passo.
+        run: ./gradlew build --no-daemon
+        env:
+          # useSSL=false: driver 5.1.46 + MySQL 5.7 sem TLS 1.0/1.1 no JDK 8 recente.
+          SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/seazs?useSSL=false
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: system
+
+      # Detecta se o Sonar pode rodar, sem imprimir o secret. Em PR de fork o
+      # secret chega vazio. O token so e injetado neste passo e no scan.
+      - name: Verificar configuracao do Sonar
+        id: sonar
+        env:
+          HAS_TOKEN: ${{ secrets.SONAR_TOKEN != '' }}
+          HAS_ORG: ${{ vars.SONAR_ORGANIZATION != '' }}
+          HAS_KEY: ${{ vars.SONAR_PROJECT_KEY != '' }}
+        run: |
+          if [ "$HAS_TOKEN" = "true" ] && [ "$HAS_ORG" = "true" ] && [ "$HAS_KEY" = "true" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Analise Sonar pulada: SONAR_TOKEN (secret) ou vars SONAR_ORGANIZATION/SONAR_PROJECT_KEY ausentes (ex.: PR de fork)."
+          fi
+
+      - name: Analise SonarCloud
+        if: steps.sonar.outputs.enabled == 'true'
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL || 'https://sonarcloud.io' }}
+        with:
+          args: >
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
+            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
+
+      - name: Relatorios de teste e cobertura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorios
+          if-no-files-found: ignore
+          retention-days: 14
+          path: |
+            build/reports/tests/
+            build/test-results/
+            build/reports/jacoco/

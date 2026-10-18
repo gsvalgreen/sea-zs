@@ -1,0 +1,38 @@
+# Dependencias para rodar o seazs localmente. Uso: docker compose up -d
+# Valores vem do .env (copie de .env.example). Nada de segredo real no repositorio.
+name: seazs
+
+services:
+  mysql:
+    image: mysql:${MYSQL_VERSION:-5.7}
+    # A imagem 5.7 nao tem build arm64 (Apple Silicon). Para mysql:8.x, defina
+    # MYSQL_PLATFORM=linux/arm64 (ou o que o seu host suportar).
+    platform: ${MYSQL_PLATFORM:-linux/amd64}
+    container_name: seazs-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?defina MYSQL_ROOT_PASSWORD no .env}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-seazs}
+      TZ: America/Sao_Paulo
+    ports:
+      # Somente loopback: o banco nao fica exposto na rede local.
+      - "127.0.0.1:${MYSQL_PORT:-3306}:3306"
+    # --ssl=0: o driver mysql-connector-java 5.1.46 negocia TLS 1.0/1.1, rejeitado
+    # por JDKs recentes. Em MySQL 8.4 esse flag nao existe: defina MYSQL_EXTRA_ARGS
+    # com outro valor (ver .env.example) ao migrar.
+    command: >-
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-time-zone=-03:00
+      ${MYSQL_EXTRA_ARGS:---ssl=0}
+    volumes:
+      - seazs-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+volumes:
+  seazs-mysql-data:
