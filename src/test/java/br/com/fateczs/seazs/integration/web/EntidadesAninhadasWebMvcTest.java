@@ -187,6 +187,23 @@ public class EntidadesAninhadasWebMvcTest {
 				.andExpect(status().isBadRequest());
 	}
 
+	@Test
+	public void alterarEventoEAgendamentoInexistentes_respondem404SemExporMensagemInterna() throws Exception {
+		org.mockito.Mockito.doThrow(new jakarta.persistence.EntityNotFoundException("detalhe interno sigiloso"))
+				.when(eventoService).alterar(any(Evento.class));
+		org.mockito.Mockito.doThrow(new jakarta.persistence.EntityNotFoundException("detalhe interno sigiloso"))
+				.when(agendamentoService).alterar(any(Agendamento.class));
+		String corpo = "{\"id\":999,\"nome\":\"X\",\"inicio\":1000,\"fim\":2000}";
+		String corpoAgendamento = "{\"id\":999,\"evento\":{\"id\":1},\"inicio\":1000,\"fim\":2000,\"pontuacaoStaff\":1}";
+
+		mvc.perform(post("/evento/alterar").with(admin()).contentType(MediaType.APPLICATION_JSON).content(corpo))
+				.andExpect(status().isNotFound())
+				.andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("sigiloso"))));
+		mvc.perform(post("/agendamento/alterar").with(admin()).contentType(MediaType.APPLICATION_JSON).content(corpoAgendamento))
+				.andExpect(status().isNotFound())
+				.andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("sigiloso"))));
+	}
+
 	private static String corpoInscricao() {
 		return "{\"atividade\":{\"id\":30},\"usuario\":{\"id\":1},\"papel\":{\"id\":2}}";
 	}
