@@ -219,4 +219,56 @@ public class UsuarioServiceImplTest {
 
 		assertThrows(org.springframework.dao.DataIntegrityViolationException.class, () -> service.inserir(entidade));
 	}
+
+	// ---- alterarPerfil
+
+	private Usuario gravado(int id, boolean adm, TipoUsuario tipo) {
+		Usuario u = new Usuario();
+		u.setId(id);
+		u.setAdm(adm);
+		u.setTipoUsuario(tipo);
+		return u;
+	}
+
+	@Test
+	public void alterarPerfilGravaTipoEAdmDoUsuario() {
+		Usuario u = gravado(5, false, TipoUsuario.ALUNO);
+		when(repository.findById(5)).thenReturn(Optional.of(u));
+		when(repository.save(u)).thenReturn(u);
+
+		Usuario salvo = service.alterarPerfil(5, TipoUsuario.FUNCIONARIO, true, 1);
+
+		assertEquals(TipoUsuario.FUNCIONARIO, salvo.getTipoUsuario());
+		assertEquals(Boolean.TRUE, salvo.getAdm());
+	}
+
+	@Test
+	public void alterarPerfilDeUsuarioInexistenteLanca404() {
+		when(repository.findById(5)).thenReturn(Optional.empty());
+
+		assertThrows(br.com.fateczs.seazs.service.UsuarioNaoEncontradoException.class,
+				() -> service.alterarPerfil(5, TipoUsuario.ALUNO, false, 1));
+		verify(repository, never()).save(any());
+	}
+
+	@Test
+	public void adminNaoPodeRetirarOProprioAcesso() {
+		when(repository.findById(1)).thenReturn(Optional.of(gravado(1, true, TipoUsuario.FUNCIONARIO)));
+
+		assertThrows(br.com.fateczs.seazs.service.PerfilInvalidoException.class,
+				() -> service.alterarPerfil(1, TipoUsuario.FUNCIONARIO, false, 1));
+		verify(repository, never()).save(any());
+	}
+
+	@Test
+	public void adminPodeMudarOProprioTipoMantendoAdmEPodeRebaixarOutroAdmin() {
+		Usuario eu = gravado(1, true, TipoUsuario.FUNCIONARIO);
+		Usuario outro = gravado(2, true, TipoUsuario.FUNCIONARIO);
+		when(repository.findById(1)).thenReturn(Optional.of(eu));
+		when(repository.findById(2)).thenReturn(Optional.of(outro));
+		when(repository.save(any(Usuario.class))).thenAnswer(i -> i.getArgument(0));
+
+		assertEquals(TipoUsuario.PROFESSOR, service.alterarPerfil(1, TipoUsuario.PROFESSOR, true, 1).getTipoUsuario());
+		assertEquals(Boolean.FALSE, service.alterarPerfil(2, TipoUsuario.ALUNO, false, 1).getAdm());
+	}
 }

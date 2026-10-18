@@ -7,6 +7,7 @@ import java.util.List;
 import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,6 +21,7 @@ import br.com.fateczs.seazs.service.EventoService;
 @RequestMapping("/evento")
 public class EventoController {
 	
+	@PreAuthorize("hasRole('ADMIN')")
 	@PostMapping("/inserir")
 	@ResponseBody
 	public void inserirEvento(@Valid @RequestBody Evento evento) {
@@ -27,36 +29,42 @@ public class EventoController {
 		eventoServ.inserir(evento);
 	}
 	
+	@PreAuthorize("isAuthenticated()")
 	@PostMapping("/buscar")
 	@ResponseBody
 	public Evento buscarEvento(@Valid @RequestBody Evento evento) {
 		return eventoServ.buscar(evento);
 	}
 	
+	@PreAuthorize("hasRole('ADMIN')")
 	@PostMapping("/alterar")
 	@ResponseBody
 	public void alterarEvento(@Valid @RequestBody Evento evento) {
 		eventoServ.alterar(evento);
 	}
 	
+	@PreAuthorize("hasRole('ADMIN')")
 	@PostMapping("/excluir")
 	@ResponseBody
 	public void excluirEvento(@Valid @RequestBody Evento evento) {
 		eventoServ.excluir(evento);
 	}
 	
+	@PreAuthorize("isAuthenticated()")
 	@PostMapping("/listar")
 	@ResponseBody
 	public List<Evento> listarEvento() {
 		return eventoServ.listar();
 	}
 	
+	@PreAuthorize("isAuthenticated()")
 	@PostMapping("/listarData")
 	@ResponseBody
 	public List<Evento> listarEventoPorDtInicio() {
 		return eventoServ.listarPorDataAsc();
 	}
 	
+	@PreAuthorize("isAuthenticated()")
 	@PostMapping("/listarDisponivelData")
 	@ResponseBody
 	public List<Evento> listarEventoDisponivelPorDtInicio() {

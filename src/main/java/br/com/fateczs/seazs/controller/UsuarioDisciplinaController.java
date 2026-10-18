@@ -5,6 +5,7 @@ import java.util.List;
 import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,36 +19,42 @@ import br.com.fateczs.seazs.service.UsuarioDisciplinaService;
 @RequestMapping("/usuario/disciplina")
 public class UsuarioDisciplinaController {
 	
+	@PreAuthorize("hasRole('ADMIN')")
 	@PostMapping("/inserir")
 	@ResponseBody
 	public void inserirUsuarioDisciplina(@Valid @RequestBody UsuarioDisciplina usuarioDisciplina) {
 		usuarioDisciplinaServ.inserir(usuarioDisciplina);
 	}
 	
+	@PreAuthorize("hasRole('ADMIN')")
 	@PostMapping("/buscar")
 	@ResponseBody
 	public UsuarioDisciplina buscarUsuarioDisciplina(@Valid @RequestBody UsuarioDisciplina usuarioDisciplina) {
 		return usuarioDisciplinaServ.buscar(usuarioDisciplina);
 	}
 	
+	@PreAuthorize("hasRole('ADMIN')")
 	@PostMapping("/alterar")
 	@ResponseBody
 	public void alterarUsuarioDisciplina(@Valid @RequestBody UsuarioDisciplina usuarioDisciplina) {
 		usuarioDisciplinaServ.alterar(usuarioDisciplina);
 	}
 	
+	@PreAuthorize("hasRole('ADMIN')")
 	@PostMapping("/excluir")
 	@ResponseBody
 	public void excluirUsuarioDisciplina(@Valid @RequestBody UsuarioDisciplina usuarioDisciplina) {
 		usuarioDisciplinaServ.excluir(usuarioDisciplina);
 	}
 	
+	@PreAuthorize("hasRole('ADMIN')")
 	@PostMapping("/listar")
 	@ResponseBody
 	public List<UsuarioDisciplina> listarUsuarioDisciplina() {
 		return usuarioDisciplinaServ.listar();
 	}
 	
+	@PreAuthorize("@autorizacao.ehDonoOuAdmin(#usuario.id)")
 	@PostMapping("/DisciplinasUsuario")
 	@ResponseBody
 	public List<UsuarioDisciplina> listarDisciplinasUsuario(@RequestBody Usuario usuario){

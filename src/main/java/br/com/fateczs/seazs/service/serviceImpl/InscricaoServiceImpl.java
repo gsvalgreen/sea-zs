@@ -37,6 +37,8 @@ public class InscricaoServiceImpl implements InscricaoService {
 
 	@Override
 	public void inserir(Inscricao inscricao) {
+		// Um id vindo do cliente faria o save sobrescrever a inscricao de outro usuario.
+		inscricao.setSequencialInscricao(null);
 		inscricao.setDtInscricao(operaData().getDataAtual().getTime());
 		inscricao.setCheckIn(false);
 		inscricao.setCheckOut(false);

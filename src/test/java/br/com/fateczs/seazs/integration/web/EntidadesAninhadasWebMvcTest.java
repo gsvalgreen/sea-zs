@@ -1,5 +1,7 @@
 package br.com.fateczs.seazs.integration.web;
 
+import static br.com.fateczs.seazs.integration.support.TokensTeste.admin;
+import static br.com.fateczs.seazs.integration.support.TokensTeste.como;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -80,18 +82,36 @@ public class EntidadesAninhadasWebMvcTest {
 	public void listarEvento_serializaCamposDoEventoEOCriador() throws Exception {
 		when(eventoService.listar()).thenReturn(Collections.singletonList(evento));
 
-		mvc.perform(post("/evento/listar"))
+		mvc.perform(post("/evento/listar").with(admin()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].id").value(10))
 				.andExpect(jsonPath("$[0].nome").value("Semana Tech"))
-				.andExpect(jsonPath("$[0].usuarioCriador.email").value("ana@teste.com"));
+				.andExpect(jsonPath("$[0].usuarioCriador.id").value(1))
+				.andExpect(jsonPath("$[0].usuarioCriador.nome").value("Nome ana@teste.com"));
+	}
+
+	/** Leitura de evento/agendamento e aberta a qualquer autenticado: criador e organizador saem sem dados pessoais. */
+	@Test
+	public void listarEventoEAgendamento_naoExpoemDadosPessoaisDoCriadorEDoOrganizador() throws Exception {
+		when(eventoService.listar()).thenReturn(Collections.singletonList(evento));
+		when(agendamentoService.listar()).thenReturn(Collections.singletonList(agendamento));
+		String[] pessoais = { "email", "endereco", "celular", "dataNasc", "rg", "genero", "matricula", "adm", "senha" };
+
+		for (String campo : pessoais) {
+			mvc.perform(post("/evento/listar").with(como(7, "ROLE_VISITANTE")))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$[0].usuarioCriador." + campo).doesNotExist());
+			mvc.perform(post("/agendamento/listar").with(como(7, "ROLE_VISITANTE")))
+					.andExpect(status().isOk())
+					.andExpect(jsonPath("$[0].usuarioOrganizador." + campo).doesNotExist());
+		}
 	}
 
 	@Test
 	public void listarEvento_naoExpoeASenhaDoUsuarioCriador() throws Exception {
 		when(eventoService.listar()).thenReturn(Collections.singletonList(evento));
 
-		mvc.perform(post("/evento/listar"))
+		mvc.perform(post("/evento/listar").with(admin()))
 				.andExpect(jsonPath("$[0].usuarioCriador.senha").doesNotExist());
 	}
 
@@ -99,7 +119,7 @@ public class EntidadesAninhadasWebMvcTest {
 	public void listarAgendamento_naoSerializaCicloAtividadeParaAgendamento() throws Exception {
 		when(agendamentoService.listar()).thenReturn(Collections.singletonList(agendamento));
 
-		mvc.perform(post("/agendamento/listar"))
+		mvc.perform(post("/agendamento/listar").with(admin()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].atividades[0].nome").value("Palestra"))
 				.andExpect(jsonPath("$[0].atividades[0].agendamento").doesNotExist());
@@ -109,7 +129,7 @@ public class EntidadesAninhadasWebMvcTest {
 	public void listarAgendamento_naoExpoeASenhaDoOrganizador() throws Exception {
 		when(agendamentoService.listar()).thenReturn(Collections.singletonList(agendamento));
 
-		mvc.perform(post("/agendamento/listar"))
+		mvc.perform(post("/agendamento/listar").with(admin()))
 				.andExpect(jsonPath("$[0].usuarioOrganizador.senha").doesNotExist());
 	}
 
@@ -119,7 +139,7 @@ public class EntidadesAninhadasWebMvcTest {
 		inscricao.setSequencialInscricao(40);
 		when(inscricaoService.listar()).thenReturn(Collections.singletonList(inscricao));
 
-		mvc.perform(post("/atividade/inscricao/listar"))
+		mvc.perform(post("/atividade/inscricao/listar").with(admin()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].sequencialInscricao").value(40))
 				.andExpect(jsonPath("$[0].checkIn").value(true))
@@ -132,7 +152,7 @@ public class EntidadesAninhadasWebMvcTest {
 		Inscricao inscricao = DadosTeste.inscricao(atividade, ana, papel(), DadosTeste.PASSADO, true, false, 0);
 		when(inscricaoService.listar()).thenReturn(Collections.singletonList(inscricao));
 
-		mvc.perform(post("/atividade/inscricao/listar"))
+		mvc.perform(post("/atividade/inscricao/listar").with(admin()))
 				.andExpect(jsonPath("$[0].usuario.senha").doesNotExist());
 	}
 
@@ -141,7 +161,7 @@ public class EntidadesAninhadasWebMvcTest {
 		when(certificadoService.emiteCertificadoAtividade(any(Inscricao.class)))
 				.thenReturn(new CertificadoAtividade("Ana", "Palestra", "Participante", 2));
 
-		mvc.perform(post("/certificado/atividade/emitir").contentType(MediaType.APPLICATION_JSON)
+		mvc.perform(post("/certificado/atividade/emitir").with(admin()).contentType(MediaType.APPLICATION_JSON)
 				.content(corpoInscricao()))
 				.andExpect(jsonPath("$.nomeUsuario").value("Ana"))
 				.andExpect(jsonPath("$.atividade").value("Palestra"))
@@ -154,7 +174,7 @@ public class EntidadesAninhadasWebMvcTest {
 	public void emitirCertificadoAtividade_semPresencaValidada_respondeOkComCorpoVazio() throws Exception {
 		when(certificadoService.emiteCertificadoAtividade(any(Inscricao.class))).thenReturn(null);
 
-		mvc.perform(post("/certificado/atividade/emitir").contentType(MediaType.APPLICATION_JSON)
+		mvc.perform(post("/certificado/atividade/emitir").with(admin()).contentType(MediaType.APPLICATION_JSON)
 				.content(corpoInscricao()))
 				.andExpect(status().isOk())
 				.andExpect(content().string(""));
@@ -162,7 +182,7 @@ public class EntidadesAninhadasWebMvcTest {
 
 	@Test
 	public void emitirCertificadoAtividade_semAtividadeUsuarioEPapel_respondeBadRequest() throws Exception {
-		mvc.perform(post("/certificado/atividade/emitir").contentType(MediaType.APPLICATION_JSON)
+		mvc.perform(post("/certificado/atividade/emitir").with(admin()).contentType(MediaType.APPLICATION_JSON)
 				.content(CORPO_VAZIO))
 				.andExpect(status().isBadRequest());
 	}

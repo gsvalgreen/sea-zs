@@ -2,6 +2,7 @@ package br.com.fateczs.seazs.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,17 +22,20 @@ public class AuthController {
 	@Autowired
 	private AuthService authService;
 
+	@PreAuthorize("permitAll()")
 	@PostMapping("/login")
 	public TokenResponse login(@Valid @RequestBody LoginRequest requisicao) {
 		return authService.login(requisicao);
 	}
 
+	@PreAuthorize("permitAll()")
 	@PostMapping("/refresh")
 	public TokenResponse refresh(@Valid @RequestBody RefreshTokenRequest requisicao) {
 		return authService.refresh(requisicao.refreshToken())
 				.orElseThrow(RefreshTokenInvalidoException::new);
 	}
 
+	@PreAuthorize("permitAll()")
 	@PostMapping("/logout")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
 	public void logout(@Valid @RequestBody RefreshTokenRequest requisicao) {

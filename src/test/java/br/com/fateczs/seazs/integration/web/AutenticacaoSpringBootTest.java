@@ -48,9 +48,17 @@ public class AutenticacaoSpringBootTest {
 	private UsuarioRepository usuarios;
 	@Autowired
 	private RefreshTokenRepository refreshTokens;
+	@Autowired
+	private br.com.fateczs.seazs.security.JwtTokenService tokens;
 
 	private static String json(String email, String senha) {
 		return "{\"email\":\"" + email + "\",\"senha\":\"" + senha + "\"}";
+	}
+
+	private String postarComo(Usuario quem, String caminho, String corpo, int status) throws Exception {
+		return mvc.perform(post(caminho).header("Authorization", "Bearer " + tokens.emitir(quem).valor())
+				.contentType(MediaType.APPLICATION_JSON).content(corpo))
+				.andExpect(status().is(status)).andReturn().getResponse().getContentAsString();
 	}
 
 	private Usuario salvarLegado(String senhaEmTextoPuro) {
@@ -184,7 +192,7 @@ public class AutenticacaoSpringBootTest {
 		u.setTipoUsuario(TipoUsuario.FUNCIONARIO);
 		usuarios.save(u);
 
-		postar("/usuario/alterar", "{\"id\":" + u.getId() + ",\"email\":\"" + u.getEmail() + "\",\"senha\":\"Nova12345\",\"nome\":\"N\","
+		postarComo(u, "/usuario/alterar", "{\"id\":" + u.getId() + ",\"email\":\"" + u.getEmail() + "\",\"senha\":\"Nova12345\",\"nome\":\"N\","
 				+ "\"endereco\":\"R\",\"celular\":\"1\",\"dataNasc\":631152000000,\"adm\":false,\"rg\":\"1\",\"genero\":\"F\","
 				+ "\"tipoUsuario\":\"ALUNO\"}", 200);
 

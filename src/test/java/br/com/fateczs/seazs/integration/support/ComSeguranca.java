@@ -9,7 +9,13 @@ import java.lang.annotation.Target;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
 
+import br.com.fateczs.seazs.repository.InscricaoRepository;
+import br.com.fateczs.seazs.repository.StaffAgendamentoRepository;
+import br.com.fateczs.seazs.security.Autorizacao;
 import br.com.fateczs.seazs.security.JwtConfig;
+import br.com.fateczs.seazs.security.LimitadorPorIp;
+import br.com.fateczs.seazs.security.LimiteTentativasConfig;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import br.com.fateczs.seazs.security.SecurityConfig;
 
 /**
@@ -19,7 +25,8 @@ import br.com.fateczs.seazs.security.SecurityConfig;
 @Documented
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@Import({ SecurityConfig.class, JwtConfig.class })
+@Import({ SecurityConfig.class, JwtConfig.class, Autorizacao.class, LimiteTentativasConfig.class, LimitadorPorIp.class })
+@MockitoBean(types = { InscricaoRepository.class, StaffAgendamentoRepository.class })
 @TestPropertySource(properties = "app.jwt.secret=" + ComSeguranca.SEGREDO_TESTE)
 public @interface ComSeguranca {
 

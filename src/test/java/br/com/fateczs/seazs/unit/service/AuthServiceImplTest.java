@@ -38,7 +38,9 @@ import br.com.fateczs.seazs.model.dto.LoginRequest;
 import br.com.fateczs.seazs.model.dto.TokenResponse;
 import br.com.fateczs.seazs.repository.RefreshTokenRepository;
 import br.com.fateczs.seazs.repository.UsuarioRepository;
+import br.com.fateczs.seazs.security.BloqueioLogin;
 import br.com.fateczs.seazs.security.JwtProperties;
+import br.com.fateczs.seazs.security.LimiteExcedidoException;
 import br.com.fateczs.seazs.security.JwtTokenService;
 import br.com.fateczs.seazs.security.RefreshTokens;
 import br.com.fateczs.seazs.security.UsuarioAutenticado;
@@ -58,6 +60,8 @@ public class AuthServiceImplTest {
 	private RefreshTokenRepository refreshTokens;
 	@Mock
 	private UsuarioRepository usuarios;
+	@Mock
+	private BloqueioLogin bloqueio;
 
 	private AuthServiceImpl service;
 	private Usuario ana;
@@ -71,6 +75,7 @@ public class AuthServiceImplTest {
 				new JwtProperties("segredo-de-teste-com-32-bytes-ou-mais!!", "seazs", Duration.ofMinutes(15), Duration.ofDays(7)));
 		ReflectionTestUtils.setField(service, "refreshTokens", refreshTokens);
 		ReflectionTestUtils.setField(service, "usuarios", usuarios);
+		ReflectionTestUtils.setField(service, "bloqueio", bloqueio);
 		ReflectionTestUtils.setField(service, "clock", Clock.fixed(AGORA, ZoneOffset.UTC));
 		ana = new Usuario();
 		ana.setId(5);
@@ -116,6 +121,66 @@ public class AuthServiceImplTest {
 		assertThrows(BadCredentialsException.class, () -> service.login(new LoginRequest("a@b.com", "errada")));
 
 		verifyNoInteractions(tokenService, refreshTokens);
+	}
+
+	// ---- bloqueio por e-mail
+
+	@Test
+	public void loginComSucessoZeraOHistoricoDeFalhasDoEmail() {
+		autenticaComSucesso();
+
+		service.login(new LoginRequest("ana@teste.com", "Segredo123"));
+
+		verify(bloqueio).exigirLiberado("ana@teste.com");
+		verify(bloqueio).registrarSucesso("ana@teste.com");
+		verify(bloqueio, never()).registrarFalha(anyString());
+	}
+
+	@Test
+	public void loginComSenhaErradaRegistraFalhaDoEmailDigitado() {
+		when(authenticationManager.authenticate(any())).thenThrow(new BadCredentialsException("x"));
+
+		assertThrows(BadCredentialsException.class, () -> service.login(new LoginRequest("Nao.Existe@b.com", "errada")));
+
+		verify(bloqueio).registrarFalha("Nao.Existe@b.com");
+		verify(bloqueio, never()).registrarSucesso(anyString());
+	}
+
+	@Test
+	public void loginDeEmailBloqueadoNaoVerificaASenhaNemEmiteNada() {
+		org.mockito.Mockito.doThrow(new LimiteExcedidoException(Duration.ofMinutes(10))).when(bloqueio)
+				.exigirLiberado("ana@teste.com");
+
+		assertThrows(LimiteExcedidoException.class, () -> service.login(new LoginRequest("ana@teste.com", "Segredo123")));
+
+		verifyNoInteractions(authenticationManager, tokenService, refreshTokens);
+		verify(bloqueio, never()).registrarFalha(anyString());
+	}
+
+	@Test
+	public void loginLegadoDeEmailBloqueadoPropaga429EmVezDeCorpoVazio() {
+		org.mockito.Mockito.doThrow(new LimiteExcedidoException(Duration.ofMinutes(10))).when(bloqueio)
+				.exigirLiberado("ana@teste.com");
+
+		assertThrows(LimiteExcedidoException.class, () -> service.loginLegado("ana@teste.com", "Segredo123"));
+
+		verifyNoInteractions(authenticationManager);
+	}
+
+	@Test
+	public void loginLegadoComSenhaErradaRegistraFalhaESegueDevolvendoVazio() {
+		when(authenticationManager.authenticate(any())).thenThrow(new BadCredentialsException("x"));
+
+		assertFalse(service.loginLegado("ana@teste.com", "errada").isPresent());
+
+		verify(bloqueio).registrarFalha("ana@teste.com");
+	}
+
+	@Test
+	public void loginLegadoComSenhaEmBrancoNaoContaComoFalhaNemConsultaOBloqueio() {
+		assertFalse(service.loginLegado("ana@teste.com", "   ").isPresent());
+
+		verifyNoInteractions(bloqueio, authenticationManager);
 	}
 
 	// ---- refresh

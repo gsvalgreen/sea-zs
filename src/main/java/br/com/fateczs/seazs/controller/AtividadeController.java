@@ -5,6 +5,7 @@ import java.util.List;
 import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,54 +21,63 @@ import br.com.fateczs.seazs.service.AtividadeService;
 @RequestMapping("/atividade")
 public class AtividadeController {
 	
+	@PreAuthorize("hasRole('ADMIN')")
 	@PostMapping("/inserir")
 	@ResponseBody
 	public void inserirAtividade(@Valid @RequestBody Atividade atividade) {
 		atividadeServ.inserir(atividade);
 	}
 	
+	@PreAuthorize("isAuthenticated()")
 	@PostMapping("/buscar")
 	@ResponseBody
 	public Atividade buscarAtividade(@Valid @RequestBody Atividade atividade) {
 		return atividadeServ.buscar(atividade);
 	}
 	
+	@PreAuthorize("hasRole('ADMIN')")
 	@PostMapping("/alterar")
 	@ResponseBody
 	public void alterarAtividade(@Valid @RequestBody Atividade atividade) {
 		atividadeServ.alterar(atividade);
 	}
 	
+	@PreAuthorize("hasRole('ADMIN')")
 	@PostMapping("/excluir")
 	@ResponseBody
 	public void excluirAtividade(@Valid @RequestBody Atividade atividade) {
 		atividadeServ.excluir(atividade);
 	}
 	
+	@PreAuthorize("isAuthenticated()")
 	@PostMapping("/listar")
 	@ResponseBody
 	public List<Atividade> listarAtividade() {
 		return atividadeServ.listar();
 	}
 	
+	@PreAuthorize("isAuthenticated()")
 	@PostMapping("/listarData")
 	@ResponseBody
 	public List<Atividade> listarAtividadePorDtInicio() {
 		return atividadeServ.listarPorDataAsc();
 	}
 	
+	@PreAuthorize("isAuthenticated()")
 	@PostMapping("/listarAgendamento")
 	@ResponseBody
 	public List<Atividade> listarAtividadePorAgendamento(@RequestBody Agendamento agendamento) {
 		return atividadeServ.listarPorAgendamento(agendamento);
 	}
 	
+	@PreAuthorize("@autorizacao.ehDonoOuAdmin(#usuario.id)")
 	@PostMapping("/listarDisponiveis")
 	@ResponseBody
 	public List<Atividade> listarAtividadesDisponiveis(@RequestBody Usuario usuario) {
 		return atividadeServ.listarDisponiveisParaInscricao(usuario);
 	}
 	
+	@PreAuthorize("isAuthenticated()")
 	@PostMapping("/listarPassadas")
 	@ResponseBody
 	public List<Atividade> listarAtividadesPassadas(){

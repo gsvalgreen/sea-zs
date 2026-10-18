@@ -3,11 +3,14 @@ package br.com.fateczs.seazs.security;
 import java.util.Arrays;
 import java.util.List;
 
+import jakarta.servlet.DispatcherType;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -16,11 +19,13 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtGra
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import tools.jackson.databind.json.JsonMapper;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
 
 	/**
@@ -36,14 +41,16 @@ public class SecurityConfig {
 				.sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.cors(Customizer.withDefaults())
 				.authorizeHttpRequests(a -> a
+						.requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
 						.requestMatchers("/api/v1/auth/**").permitAll()
 						.requestMatchers(HttpMethod.POST, "/usuario/login", "/usuario/inserir").permitAll()
 						.requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
-						// Novas rotas exigem autenticacao.
-						.requestMatchers("/api/v1/**").authenticated()
-						// TODO(2b): fechar as rotas legadas por RBAC (@PreAuthorize/checagem do dono). Hoje o front
-						// atual nao envia Bearer, entao elas seguem abertas; so /api/v1/** esta protegido.
-						.anyRequest().permitAll())
+						// O despacho de erro do container (/error) nao carrega o Bearer: sem isto, um 400/404/500 viraria 401.
+						.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+						// Default-deny: toda rota nao listada acima exige autenticacao. O RBAC fino (perfil e posse)
+						// fica em @PreAuthorize em cada handler dos controllers; um teste garante que nenhum handler
+						// novo fique sem a anotacao.
+						.anyRequest().authenticated())
 				.oauth2ResourceServer(o -> o
 						.jwt(j -> j.jwtAuthenticationConverter(conversor()))
 						.authenticationEntryPoint(handlers)

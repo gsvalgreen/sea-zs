@@ -2,6 +2,8 @@ package br.com.fateczs.seazs.integration.web;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static br.com.fateczs.seazs.integration.support.TokensTeste.admin;
+import static br.com.fateczs.seazs.integration.support.TokensTeste.como;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -51,6 +53,8 @@ public class UsuarioControllerWebMvcTest {
 	@MockitoBean
 	private AuthService authService;
 
+	private static final String CORPO_CADASTRO = "{\"email\":\"ana@teste.com\",\"senha\":\"segredo123\",\"nome\":\"Ana\",\"endereco\":\"R\","
+			+ "\"celular\":\"1\",\"dataNasc\":631152000000,\"rg\":\"1\",\"genero\":\"F\"}";
 	private static final String CORPO_USUARIO = "{\"id\":1,\"email\":\"ana@teste.com\",\"senha\":\"segredo123\"}";
 
 	private static Usuario usuarioCompleto() {
@@ -86,7 +90,7 @@ public class UsuarioControllerWebMvcTest {
 	public void buscar_naoExpoeASenhaNaResposta() throws Exception {
 		when(usuarioService.buscar(any(Usuario.class))).thenReturn(usuarioCompleto());
 
-		mvc.perform(post("/usuario/buscar").contentType(MediaType.APPLICATION_JSON).content(CORPO_USUARIO))
+		mvc.perform(post("/usuario/buscar").with(admin()).contentType(MediaType.APPLICATION_JSON).content(CORPO_USUARIO))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$.senha").doesNotExist());
 	}
@@ -97,7 +101,7 @@ public class UsuarioControllerWebMvcTest {
 		outro.setSenha("outraSenha");
 		when(usuarioService.listar()).thenReturn(Arrays.asList(usuarioCompleto(), outro));
 
-		mvc.perform(post("/usuario/listar"))
+		mvc.perform(post("/usuario/listar").with(admin()))
 				.andExpect(status().isOk())
 				.andExpect(jsonPath("$[0].senha").doesNotExist())
 				.andExpect(jsonPath("$[1].senha").doesNotExist());
@@ -189,11 +193,17 @@ public class UsuarioControllerWebMvcTest {
 	 * TODO(2b): ao fechar por RBAC, este teste deve ser invertido (401 sem token).
 	 */
 	@Test
-	public void rotaLegada_hoje_continuaAbertaSemToken() throws Exception {
-		when(usuarioService.listar()).thenReturn(Arrays.asList(usuarioCompleto()));
-
+	public void rotaLegada_semToken_responde401EmProblemJson() throws Exception {
 		mvc.perform(post("/usuario/listar"))
-				.andExpect(status().isOk());
+				.andExpect(status().isUnauthorized())
+				.andExpect(content().contentTypeCompatibleWith("application/problem+json"));
+	}
+
+	@Test
+	public void rotaLegada_comPerfilSemPermissao_responde403() throws Exception {
+		mvc.perform(post("/usuario/listar").with(como(7, "ROLE_ALUNO")))
+				.andExpect(status().isForbidden())
+				.andExpect(content().contentTypeCompatibleWith("application/problem+json"));
 	}
 
 	@Test
@@ -217,7 +227,7 @@ public class UsuarioControllerWebMvcTest {
 		org.mockito.Mockito.doThrow(new br.com.fateczs.seazs.service.EmailJaCadastradoException(new RuntimeException("Duplicate entry 'ana@teste.com'")))
 				.when(usuarioService).inserir(any(Usuario.class));
 
-		mvc.perform(post("/usuario/inserir").contentType(MediaType.APPLICATION_JSON).content(CORPO_USUARIO))
+		mvc.perform(post("/usuario/inserir").contentType(MediaType.APPLICATION_JSON).content(CORPO_CADASTRO))
 				.andExpect(status().isConflict())
 				.andExpect(content().contentTypeCompatibleWith("application/problem+json"))
 				.andExpect(jsonPath("$.status").value(409))

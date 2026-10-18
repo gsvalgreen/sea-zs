@@ -8,6 +8,7 @@ import jakarta.validation.groups.Default;
 import br.com.fateczs.seazs.model.CrachaUsuario;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,30 +25,35 @@ import br.com.fateczs.seazs.validation.DadosCadastrais;
 @RequestMapping("/usuario")
 public class UsuarioController {
 	
+	@PreAuthorize("permitAll()")
 	@PostMapping("/inserir")
 	@ResponseBody
 	public void inserirUsuario(@Validated({ Default.class, DadosCadastrais.class }) @RequestBody Usuario usuario) {
 		usuServ.inserir(usuario);
 	}
 	
+	@PreAuthorize("@autorizacao.ehDonoOuAdmin(#usuario.id)")
 	@PostMapping("/buscar")
 	@ResponseBody
 	public Usuario buscarUsuario(@Valid @RequestBody Usuario usuario) {
 		return usuServ.buscar(usuario);
 	}
 	
+	@PreAuthorize("@autorizacao.ehDonoOuAdmin(#usuario.id)")
 	@PostMapping("/alterar")
 	@ResponseBody
 	public void alterarUsuario(@Validated({ Default.class, DadosCadastrais.class }) @RequestBody Usuario usuario) {
 		usuServ.alterar(usuario);
 	}
 	
+	@PreAuthorize("@autorizacao.ehDonoOuAdmin(#usuario.id)")
 	@PostMapping("/excluir")
 	@ResponseBody
 	public void excluirUsuario(@Valid @RequestBody Usuario usuario) {
 		usuServ.excluir(usuario);
 	}
 	
+	@PreAuthorize("hasRole('ADMIN')")
 	@PostMapping("/listar")
 	@ResponseBody
 	public List<Usuario> listarUsuario() {
@@ -61,12 +67,14 @@ public class UsuarioController {
 	 * @deprecated use {@code POST /api/v1/auth/login} (401 padronizado, refresh token e DTOs proprios).
 	 */
 	@Deprecated
+	@PreAuthorize("permitAll()")
 	@PostMapping("/login")
 	@ResponseBody
 	public LoginLegadoResponse loginUsuario(@RequestBody Usuario usuario){
 		return authService.loginLegado(usuario.getEmail(), usuario.getSenha()).orElse(null);
 	}
 
+	@PreAuthorize("@autorizacao.ehDonoOuAdmin(#usuario.id)")
 	@PostMapping("/cracha")
 	@ResponseBody
 	public CrachaUsuario emitirCracha(@RequestBody Usuario usuario) {return usuServ.emitirCracha(usuario);}

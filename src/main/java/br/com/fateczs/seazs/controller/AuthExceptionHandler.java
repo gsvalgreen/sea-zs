@@ -16,11 +16,15 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
+import br.com.fateczs.seazs.service.PerfilInvalidoException;
+import br.com.fateczs.seazs.service.UsuarioNaoEncontradoException;
+
 /**
- * Erros do {@link AuthController} em ProblemDetail (RFC 7807). Escopo restrito a esse controller: os endpoints
- * legados mantem o comportamento atual (a padronizacao global fica para a Fase 3).
+ * Erros do {@link AuthController} e do {@link UsuarioPerfilController} (rotas /api/v1) em ProblemDetail (RFC 7807).
+ * Escopo restrito a esses controllers: os endpoints legados mantem o comportamento atual (a padronizacao global
+ * fica para a Fase 3).
  */
-@RestControllerAdvice(assignableTypes = AuthController.class)
+@RestControllerAdvice(assignableTypes = { AuthController.class, UsuarioPerfilController.class })
 public class AuthExceptionHandler extends ResponseEntityExceptionHandler {
 
 	/** 401 generico: nao distingue e-mail inexistente de senha errada. */
@@ -32,6 +36,20 @@ public class AuthExceptionHandler extends ResponseEntityExceptionHandler {
 	@ExceptionHandler(AuthController.RefreshTokenInvalidoException.class)
 	public ResponseEntity<ProblemDetail> refreshInvalido(AuthController.RefreshTokenInvalidoException ex) {
 		return naoAutorizado("Refresh token inválido ou expirado");
+	}
+
+	@ExceptionHandler(UsuarioNaoEncontradoException.class)
+	public ResponseEntity<ProblemDetail> usuarioNaoEncontrado(UsuarioNaoEncontradoException ex) {
+		ProblemDetail problema = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "Usuário não encontrado");
+		problema.setTitle("Não encontrado");
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problema);
+	}
+
+	@ExceptionHandler(PerfilInvalidoException.class)
+	public ResponseEntity<ProblemDetail> perfilInvalido(PerfilInvalidoException ex) {
+		ProblemDetail problema = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+		problema.setTitle("Perfil não alterado");
+		return ResponseEntity.status(HttpStatus.CONFLICT).body(problema);
 	}
 
 	private ResponseEntity<ProblemDetail> naoAutorizado(String detalhe) {

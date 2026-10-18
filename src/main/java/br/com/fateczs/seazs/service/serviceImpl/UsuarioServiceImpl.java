@@ -6,6 +6,8 @@ import br.com.fateczs.seazs.model.CrachaUsuario;
 import br.com.fateczs.seazs.model.mapper.CrachaUsuarioMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.hibernate.exception.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,11 +17,15 @@ import br.com.fateczs.seazs.model.Usuario;
 import br.com.fateczs.seazs.repository.RefreshTokenRepository;
 import br.com.fateczs.seazs.repository.UsuarioRepository;
 import br.com.fateczs.seazs.service.EmailJaCadastradoException;
+import br.com.fateczs.seazs.service.PerfilInvalidoException;
+import br.com.fateczs.seazs.service.UsuarioNaoEncontradoException;
 import br.com.fateczs.seazs.service.UsuarioService;
 import br.com.fateczs.seazs.utils.TipoUsuario;
 
 @Service
 public class UsuarioServiceImpl implements UsuarioService {
+
+	private static final Logger log = LoggerFactory.getLogger(UsuarioServiceImpl.class);
 
 	@Autowired
 	private UsuarioRepository repository;
@@ -94,6 +100,21 @@ public class UsuarioServiceImpl implements UsuarioService {
 	public List<Usuario> listar() {
 		// TODO Auto-generated method stub
 		return repository.findAll();
+	}
+
+	@Override
+	@Transactional
+	public Usuario alterarPerfil(Integer id, TipoUsuario tipoUsuario, boolean adm, Integer idAutor) {
+		Usuario usuario = repository.findById(id).orElseThrow(UsuarioNaoEncontradoException::new);
+		if (!adm && Boolean.TRUE.equals(usuario.getAdm()) && id.equals(idAutor)) {
+			throw new PerfilInvalidoException("o administrador nao pode retirar o proprio acesso");
+		}
+		usuario.setTipoUsuario(tipoUsuario);
+		usuario.setAdm(adm);
+		Usuario salvo = repository.save(usuario);
+		// Auditoria simples: so ids e o novo perfil (sem nome, e-mail ou outros dados pessoais).
+		log.info("perfil alterado: usuario={} tipoUsuario={} adm={} por={}", id, tipoUsuario, adm, idAutor);
+		return salvo;
 	}
 
 	@Override

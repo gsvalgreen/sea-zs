@@ -23,6 +23,7 @@ import br.com.fateczs.seazs.model.dto.UsuarioResumoResponse;
 import br.com.fateczs.seazs.repository.RefreshTokenRepository;
 import br.com.fateczs.seazs.repository.UsuarioRepository;
 import br.com.fateczs.seazs.security.Autoridades;
+import br.com.fateczs.seazs.security.BloqueioLogin;
 import br.com.fateczs.seazs.security.JwtProperties;
 import br.com.fateczs.seazs.security.JwtTokenService;
 import br.com.fateczs.seazs.security.RefreshTokens;
@@ -45,13 +46,15 @@ public class AuthServiceImpl implements AuthService {
 	private UsuarioRepository usuarios;
 	@Autowired
 	private Clock clock;
+	@Autowired
+	private BloqueioLogin bloqueio;
 
 	// Sem @Transactional em login/loginLegado: o loadUserByUsername (readOnly) marcaria a transacao externa como
 	// rollback-only ao lancar UsernameNotFoundException (e-mail inexistente), e o commit viraria
 	// UnexpectedRollbackException (500). Cada passo (leitura do usuario, rehash, refresh token) ja tem transacao propria.
 	@Override
 	public TokenResponse login(LoginRequest requisicao) {
-		Usuario usuario = autenticar(requisicao.email(), requisicao.senha());
+		Usuario usuario = autenticarComBloqueio(requisicao.email(), requisicao.senha());
 		return emitir(usuario, UUID.randomUUID().toString());
 	}
 
@@ -95,10 +98,27 @@ public class AuthServiceImpl implements AuthService {
 			return Optional.empty();
 		}
 		try {
-			Usuario usuario = autenticar(email, senha);
+			Usuario usuario = autenticarComBloqueio(email, senha);
 			return Optional.of(new LoginLegadoResponse(usuario, tokenService.emitir(usuario).valor()));
 		} catch (BadCredentialsException e) {
 			return Optional.empty();
+		}
+	}
+
+	/**
+	 * Aplica o bloqueio temporario por e-mail ao redor da autenticacao: bloqueado, nem verifica a senha (429); falha
+	 * conta para o bloqueio; sucesso zera. O e-mail e contado como foi digitado (existindo ou nao), entao a resposta
+	 * nao revela se ele existe.
+	 */
+	private Usuario autenticarComBloqueio(String email, String senha) {
+		bloqueio.exigirLiberado(email);
+		try {
+			Usuario usuario = autenticar(email, senha);
+			bloqueio.registrarSucesso(email);
+			return usuario;
+		} catch (BadCredentialsException e) {
+			bloqueio.registrarFalha(email);
+			throw e;
 		}
 	}
 

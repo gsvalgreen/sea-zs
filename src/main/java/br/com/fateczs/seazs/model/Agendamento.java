@@ -42,6 +42,8 @@ public class Agendamento implements Serializable {
 	
 	@NotNull
 	@ManyToOne
+	// Leitura aberta a qualquer autenticado: nao devolve dados pessoais do usuario (so id, nome, turno, semestre, tipo e curso).
+	@JsonIgnoreProperties(value = { "email", "endereco", "celular", "dataNasc", "rg", "genero", "matricula", "adm", "hibernateLazyInitializer", "handler" }, allowSetters = true)
 	@JoinColumn(name = "id_usuario_organizador")
 	private Usuario usuarioOrganizador;
 	

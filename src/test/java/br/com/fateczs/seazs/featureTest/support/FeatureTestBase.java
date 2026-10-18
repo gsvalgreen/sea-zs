@@ -44,6 +44,8 @@ import com.jayway.jsonpath.JsonPath;
 @SpringBootTest
 @AutoConfigureMockMvc
 @ContextConfiguration(initializers = FeatureTestBase.MySqlInitializer.class)
+// Os cenarios cadastram varios usuarios do mesmo IP: sem isto o limite por IP (10/min) devolveria 429.
+@org.springframework.test.context.TestPropertySource(properties = "app.security.rate-limit.max-requisicoes=100000")
 public abstract class FeatureTestBase {
 
 	protected static final long MINUTO = 60_000L;
@@ -54,6 +56,37 @@ public abstract class FeatureTestBase {
 
 	@Autowired
 	protected MockMvc mvc;
+	@Autowired
+	private org.springframework.jdbc.core.JdbcTemplate jdbcBase;
+	@Autowired
+	private br.com.fateczs.seazs.repository.UsuarioRepository usuariosBase;
+	@Autowired
+	private br.com.fateczs.seazs.security.JwtTokenService tokensBase;
+
+	private String tokenAdmin;
+
+	/**
+	 * Access token de um administrador criado direto no banco (o primeiro admin nunca nasce pela API). Os helpers de
+	 * cenario chamam os controllers como ADMIN, que e quem pode tudo.
+	 */
+	protected synchronized String tokenAdmin() {
+		if (tokenAdmin == null) {
+			String email = unico("admin-base") + "@teste.com";
+			jdbcBase.update("insert into tb_usuario (adm, celular_usuario, data_nascimento, email_usuario, endereco_usuario,"
+					+ " genero_usuario, nome_usuario, rg_usuario, senha, tipo_usuario) values (b'1', '1', '1990-01-01', ?, 'R', 'F',"
+					+ " 'Admin', '1', 'nao-usada', 3)", email);
+			tokenAdmin = tokensBase.emitir(usuariosBase.findByEmail(email).get()).valor();
+		}
+		return tokenAdmin;
+	}
+
+	/** Autentica a requisicao como o administrador do cenario. */
+	protected org.springframework.test.web.servlet.request.RequestPostProcessor admin() {
+		return r -> {
+			r.addHeader("Authorization", "Bearer " + tokenAdmin());
+			return r;
+		};
+	}
 
 	@BeforeAll
 	public static void exigirDocker() {
@@ -106,7 +139,7 @@ public abstract class FeatureTestBase {
 
 	/** POST JSON esperando HTTP 200; devolve o corpo (pode ser vazio). */
 	protected String postar(String caminho, String json) throws Exception {
-		return mvc.perform(post(caminho).contentType(MediaType.APPLICATION_JSON).content(json))
+		return mvc.perform(post(caminho).with(admin()).contentType(MediaType.APPLICATION_JSON).content(json))
 				.andExpect(status().isOk())
 				.andReturn().getResponse().getContentAsString();
 	}
