@@ -264,4 +264,17 @@ public class AuthSegurancaWebMvcTest {
 				.header("Access-Control-Request-Headers", "x-custom"))
 				.andExpect(status().isForbidden());
 	}
+
+	@Test
+	public void respostasDeAuthNaoSaoCacheadasNemFarejadas() throws Exception {
+		when(authService.login(any(LoginRequest.class))).thenReturn(new TokenResponse("Bearer", "acc", 900, "ref",
+				new UsuarioResumoResponse(7, "Ana", "ALUNO", List.of("ROLE_ALUNO"))));
+
+		mvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON).content(LOGIN))
+				.andExpect(header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")))
+				.andExpect(header().string("X-Content-Type-Options", "nosniff"));
+		mvc.perform(get("/api/v1/teste/quem-sou-eu"))
+				.andExpect(status().isUnauthorized())
+				.andExpect(header().string("Cache-Control", org.hamcrest.Matchers.containsString("no-store")));
+	}
 }

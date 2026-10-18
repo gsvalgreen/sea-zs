@@ -170,4 +170,19 @@ public class UsuarioServiceImplTest {
 		assertEquals("Ana", cracha.getNomeDoUsuario());
 		assertEquals("ALUNO", cracha.getTipoDoUsuario());
 	}
+
+	@Test
+	public void inserirComEmailDuplicadoLancaEmailJaCadastradoSemVazarOEmail() {
+		Usuario entidade = new Usuario();
+		entidade.setEmail("ana@teste.com");
+		entidade.setSenha("Segredo123");
+		when(passwordEncoder.encode("Segredo123")).thenReturn("{bcrypt}HASH");
+		when(repository.save(any(Usuario.class)))
+				.thenThrow(new org.springframework.dao.DataIntegrityViolationException("Duplicate entry 'ana@teste.com'"));
+
+		br.com.fateczs.seazs.service.EmailJaCadastradoException ex = assertThrows(
+				br.com.fateczs.seazs.service.EmailJaCadastradoException.class, () -> service.inserir(entidade));
+
+		assertFalse(ex.getMessage().contains("ana@teste.com"));
+	}
 }

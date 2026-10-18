@@ -211,4 +211,17 @@ public class UsuarioControllerWebMvcTest {
 				.andExpect(status().isOk())
 				.andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:4200"));
 	}
+
+	@Test
+	public void inserir_comEmailDuplicado_responde409GenericoSemEcoarOEmail() throws Exception {
+		org.mockito.Mockito.doThrow(new br.com.fateczs.seazs.service.EmailJaCadastradoException(new RuntimeException("Duplicate entry 'ana@teste.com'")))
+				.when(usuarioService).inserir(any(Usuario.class));
+
+		mvc.perform(post("/usuario/inserir").contentType(MediaType.APPLICATION_JSON).content(CORPO_USUARIO))
+				.andExpect(status().isConflict())
+				.andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+				.andExpect(jsonPath("$.status").value(409))
+				.andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("ana@teste.com"))))
+				.andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("Duplicate"))));
+	}
 }

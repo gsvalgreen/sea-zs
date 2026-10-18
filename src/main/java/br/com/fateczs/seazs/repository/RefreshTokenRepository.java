@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import br.com.fateczs.seazs.model.RefreshToken;
 import jakarta.persistence.LockModeType;
@@ -21,6 +22,11 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
 	@Modifying
 	@Query("update RefreshToken r set r.revogadoEm = :agora where r.familia = :familia and r.revogadoEm is null")
 	int revogarFamilia(@Param("familia") String familia, @Param("agora") Instant agora);
+
+	@Transactional
+	@Modifying
+	@Query("delete from RefreshToken r where r.expiraEm < :limite")
+	int deleteByExpiraEmBefore(@Param("limite") Instant limite);
 
 	void deleteByIdUsuario(Integer idUsuario);
 }

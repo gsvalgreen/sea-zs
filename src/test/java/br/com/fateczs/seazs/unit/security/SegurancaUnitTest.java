@@ -292,4 +292,13 @@ public class SegurancaUnitTest {
 		assertThrows(IllegalStateException.class,
 				() -> new SecurityConfig().corsConfigurationSource(Arrays.asList("https://*.fatec.sp.gov.br")));
 	}
+
+	@Test
+	public void senhaLegadaComTamanhoDiferenteOuPrefixoComumNaoCasa() {
+		String legado = new UsuarioAutenticado(usuario("Segredo123")).getPassword();
+
+		assertFalse(encoder.matches("Segredo12", legado));
+		assertFalse(encoder.matches("Segredo1234", legado));
+		assertFalse(encoder.matches("", legado));
+	}
 }

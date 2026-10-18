@@ -1,5 +1,7 @@
 package br.com.fateczs.seazs.security;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -10,7 +12,6 @@ import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
-import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 /** Codificacao de senhas e AuthenticationManager (e-mail + senha). */
@@ -23,11 +24,10 @@ public class AutenticacaoConfig {
 	 * durante a migracao (veja {@link UsuarioAutenticado}); remova-o quando nao restarem senhas sem prefixo no banco.
 	 */
 	@Bean
-	@SuppressWarnings("deprecation")
 	public PasswordEncoder passwordEncoder() {
 		Map<String, PasswordEncoder> encoders = new HashMap<>();
 		encoders.put("bcrypt", new BCryptPasswordEncoder());
-		encoders.put("noop", NoOpPasswordEncoder.getInstance());
+		encoders.put("noop", new LegadoTextoPuroEncoder());
 		return new DelegatingPasswordEncoder("bcrypt", encoders);
 	}
 
@@ -41,5 +41,24 @@ public class AutenticacaoConfig {
 		provider.setPasswordEncoder(encoder);
 		provider.setUserDetailsPasswordService(detalhes);
 		return new ProviderManager(provider);
+	}
+
+	/**
+	 * Le senhas legadas em texto puro comparando em tempo constante ({@code MessageDigest.isEqual}), ao contrario do
+	 * {@code NoOpPasswordEncoder} (String.equals, que vaza o prefixo comum pelo tempo). Nao codifica: so existe para
+	 * verificar; novas senhas sempre saem em BCrypt.
+	 */
+	static final class LegadoTextoPuroEncoder implements PasswordEncoder {
+
+		@Override
+		public String encode(CharSequence senha) {
+			return senha.toString();
+		}
+
+		@Override
+		public boolean matches(CharSequence informada, String armazenada) {
+			return MessageDigest.isEqual(informada.toString().getBytes(StandardCharsets.UTF_8),
+					armazenada.getBytes(StandardCharsets.UTF_8));
+		}
 	}
 }

@@ -5,6 +5,7 @@ import java.util.List;
 import br.com.fateczs.seazs.model.CrachaUsuario;
 import br.com.fateczs.seazs.model.mapper.CrachaUsuarioMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import br.com.fateczs.seazs.model.Usuario;
 import br.com.fateczs.seazs.repository.RefreshTokenRepository;
 import br.com.fateczs.seazs.repository.UsuarioRepository;
+import br.com.fateczs.seazs.service.EmailJaCadastradoException;
 import br.com.fateczs.seazs.service.UsuarioService;
 import br.com.fateczs.seazs.utils.TipoUsuario;
 
@@ -41,7 +43,12 @@ public class UsuarioServiceImpl implements UsuarioService {
 		usuario.setAdm(false);
 		usuario.setTipoUsuario(TipoUsuario.VISITANTE);
 		usuario.setSenha(passwordEncoder.encode(usuario.getSenha()));
-		repository.save(usuario);
+		try {
+			repository.save(usuario);
+		} catch (DataIntegrityViolationException e) {
+			// Unica restricao do cadastro que o cliente pode violar: e-mail duplicado (chave unica).
+			throw new EmailJaCadastradoException(e);
+		}
 	}
 
 	@Override

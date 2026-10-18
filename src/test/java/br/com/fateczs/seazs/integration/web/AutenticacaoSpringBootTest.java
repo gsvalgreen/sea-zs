@@ -1,5 +1,7 @@
 package br.com.fateczs.seazs.integration.web;
 
+import br.com.fateczs.seazs.model.RefreshToken;
+import java.time.Instant;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -231,5 +233,34 @@ public class AutenticacaoSpringBootTest {
 		postar("/api/v1/auth/refresh", "{\"refreshToken\":\"desconhecido\"}", 401);
 		mvc.perform(post("/api/v1/auth/refresh").contentType(MediaType.APPLICATION_JSON).content("{}"))
 				.andExpect(status().isBadRequest()).andExpect(jsonPath("$.erros").isArray());
+	}
+
+	@Test
+	public void limpezaRemoveSoOsExpiradosAlemDaCarencia() {
+		Usuario u = salvarLegado("Segredo123");
+		Instant agora = Instant.parse("2026-10-17T03:30:00Z");
+		var antigo = refreshTokens.save(new RefreshToken("h-antigo-" + UUID.randomUUID(), "f1", u.getId(), agora.minusSeconds(900000), agora.minusSeconds(800000)));
+		var recemExpirado = refreshTokens.save(new RefreshToken("h-recente-" + UUID.randomUUID(), "f2", u.getId(), agora.minusSeconds(90000), agora.minusSeconds(3600)));
+		var valido = refreshTokens.save(new RefreshToken("h-valido-" + UUID.randomUUID(), "f3", u.getId(), agora, agora.plusSeconds(3600)));
+
+		int removidos = refreshTokens.deleteByExpiraEmBefore(agora.minusSeconds(7 * 24 * 3600L));
+
+		assertEquals(1, removidos);
+		assertTrue(refreshTokens.findById(antigo.getId()).isEmpty());
+		assertTrue(refreshTokens.findById(recemExpirado.getId()).isPresent());
+		assertTrue(refreshTokens.findById(valido.getId()).isPresent());
+	}
+
+	@Test
+	public void cadastroComEmailDuplicado_responde409Generico() throws Exception {
+		String email = "dup-" + UUID.randomUUID() + "@teste.com";
+		String corpo = "{\"email\":\"" + email + "\",\"senha\":\"Segredo123\",\"nome\":\"N\",\"endereco\":\"R\","
+				+ "\"celular\":\"1\",\"dataNasc\":631152000000,\"adm\":false,\"rg\":\"1\",\"genero\":\"F\"}";
+		postar("/usuario/inserir", corpo, 200);
+
+		String resposta = postar("/usuario/inserir", corpo, 409);
+
+		assertTrue(resposta.contains("Não foi possível concluir o cadastro"));
+		assertTrue(!resposta.contains(email));
 	}
 }
