@@ -34,6 +34,13 @@ Todo código criado por agentes deve ser revisado pelo subagent `revisor-codigo`
 
 Depois do `revisor-codigo` e sempre antes de abrir o PR, quem orquestra aciona o subagent `seguranca-codigo-limpo`, que corrige riscos de segurança e code smells. Fluxo: autor → `revisor-codigo` → `seguranca-codigo-limpo` → PR. Se o `seguranca-codigo-limpo` alterar código, o `revisor-codigo` revê essas alterações antes do PR.
 
+## Segurança (resumo; detalhes e matriz no README)
+
+- Default-deny em `SecurityConfig`; regra por handler com `@PreAuthorize` (bean `Autorizacao` para posse: `ehDonoOuAdmin(id)`, `ehDonoDaInscricaoOuAdmin`, `ehDonoDoStaffOuAdmin`). Todo handler novo de controller precisa de `@PreAuthorize` (`ControllersProtegidosTest` falha sem). O usuário vem sempre do `sub` do JWT, nunca do corpo.
+- `adm`/`tipoUsuario` só mudam por `PUT /api/v1/usuarios/{id}/perfil` (ADMIN); cadastro e `/usuario/alterar` os ignoram.
+- Rate limit por IP (`LimitadorPorIp`, interceptor) e lockout por e-mail (`BloqueioLogin`, em `AuthServiceImpl`), em memória, configuráveis por `app.security.*`; testes usam `RelogioMutavel` (sem sleep).
+- Testes de `@WebMvcTest` com `@ComSeguranca` autenticam com `TokensTeste.admin()/como(id, papeis)`.
+
 ## Architecture
 
 Layered Spring MVC under `br.com.fateczs.seazs`:

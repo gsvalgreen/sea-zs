@@ -41,26 +41,80 @@ export JWT_SECRET="$(openssl rand -base64 48)"
 ./gradlew bootRun
 ```
 
-Endpoints: `POST /api/v1/auth/login` (`{"email","senha"}` -> access + refresh token; 401 genérico "Credenciais inválidas" para e-mail inexistente ou senha errada; 400 para validação), `POST /api/v1/auth/refresh` (troca o refresh token por um novo par; o antigo é revogado a cada uso e reapresentá-lo revoga a sessão inteira) e `POST /api/v1/auth/logout` (204). O refresh token é opaco e só o hash SHA-256 fica no banco (`tb_refresh_token`). Rotas `/api/v1/**` (exceto `auth`) exigem Bearer; 401/403 saem em `application/problem+json`. As rotas legadas (`/usuario/**` etc.) seguem abertas até o passo 2b (RBAC). `POST /usuario/login` é **deprecated**: mantém o contrato antigo (200 com corpo vazio se inválido) e devolve o campo extra `token`; use `/api/v1/auth/login`.
+Endpoints: `POST /api/v1/auth/login` (`{"email","senha"}` -> access + refresh token; 401 genérico "Credenciais inválidas" para e-mail inexistente ou senha errada; 400 para validação), `POST /api/v1/auth/refresh` (troca o refresh token por um novo par; o antigo é revogado a cada uso e reapresentá-lo revoga a sessão inteira) e `POST /api/v1/auth/logout` (204). O refresh token é opaco e só o hash SHA-256 fica no banco (`tb_refresh_token`). Todas as rotas, legadas e `/api/v1`, exigem Bearer (default-deny), exceto as públicas listadas em "Autorização"; 401/403 saem em `application/problem+json`. `POST /usuario/login` é **deprecated**: mantém o contrato antigo (200 com corpo vazio se inválido) e devolve o campo extra `token`; use `/api/v1/auth/login`.
 
-> **AVISO DE SEGURANÇA (até o passo 2b):** as rotas legadas continuam **sem autenticação nem autorização**. Qualquer pessoa pode, por exemplo, chamar `/usuario/alterar` com o id de outro usuário e **trocar a senha dele (tomada de conta)**, `/usuario/excluir` para apagar contas, e `/usuario/buscar`, `/usuario/listar` e `/usuario/cracha` para **ler dados pessoais** (nome, e-mail, RG, celular, endereço etc.) de qualquer usuário; as demais rotas legadas (eventos, atividades, inscrições, certificados...) também aceitam leitura e escrita anônimas. **NÃO use esta versão fora de desenvolvimento** nem exponha a porta na internet/rede compartilhada. Só `/api/v1/**` (exceto `/api/v1/auth/**`) exige Bearer.
-
-Cadastro com e-mail já existente responde `409` (`application/problem+json`, mensagem genérica sem repetir o e-mail). Isso confirma que o e-mail existe (enumeração), mas num cadastro aberto sem confirmação por e-mail o usuário precisa dessa resposta; o login segue sem diferenciar e-mail inexistente de senha errada. O limite de tentativas (rate limiting) ainda **não existe**: login, refresh e cadastro permitem força bruta/enumeração em massa até o passo 2b.
+Cadastro com e-mail já existente responde `409` (`application/problem+json`, mensagem genérica sem repetir o e-mail). Isso confirma que o e-mail existe (enumeração), mas num cadastro aberto sem confirmação por e-mail o usuário precisa dessa resposta; o login segue sem diferenciar e-mail inexistente de senha errada. Login, refresh e cadastro têm limite por IP e bloqueio por e-mail (veja "Rate limit e bloqueio").
 
 Higiene de tokens: um job diário (`LimpezaRefreshTokens`, 03:30; cron em `app.jwt.limpeza-cron`) apaga refresh tokens expirados há mais de 7 dias. Limitações conhecidas do access token (JWT HS256, 15 min): as roles ficam no token, então rebaixar/excluir um usuário só vale quando o token expira (no máximo `JWT_ACCESS_TTL`); o segredo simétrico sem `kid` não suporta rotação sem derrubar as sessões.
 
 Senhas: `DelegatingPasswordEncoder` com BCrypt. O cadastro (`/usuario/inserir`) e a alteração gravam BCrypt (`{bcrypt}...`). Senhas antigas em texto puro (sem prefixo) continuam válidas e são regravadas como BCrypt no primeiro login bem-sucedido. O BCrypt só considera 72 bytes: senhas maiores são recusadas (400) no cadastro e no login (usuário legado com senha maior que 72 bytes não consegue logar e precisa de redefinição). A comparação de senha agora diferencia maiúsculas de minúsculas.
 Senha vazia ou só com espaços é recusada (400) no cadastro e no login; no legado (`/usuario/login`) vira o 200 com corpo vazio de sempre.
 
+### Autorização (passo 2b)
+
+Default-deny: `anyRequest().authenticated()`. Públicos: `/api/v1/auth/**`, `POST /usuario/login`, `POST /usuario/inserir`, `/actuator/health` e preflight CORS. O restante é decidido por `@PreAuthorize` em cada handler (method security); o teste `ControllersProtegidosTest` falha se um handler novo ficar sem a anotação. Perfis: `ROLE_<TipoUsuario>` (VISITANTE, PROFESSOR, FUNCIONARIO, ALUNO) e `ROLE_ADMIN` quando `adm=true`. "Dono" = o `sub` do JWT (id do usuário) é o usuário do recurso; nunca o que vem no corpo. Posse de inscrição/staff é conferida pelo registro gravado no banco.
+
+Decisão: o front não restringe nada por perfil (só guarda `adm`/`tipoUsuario` no `sessionStorage`), então a escrita de estrutura (evento, curso, disciplina, papel, agendamento, atividade, vínculo usuário-disciplina) ficou **só com ADMIN**, o mais restritivo; liberar FUNCIONARIO/PROFESSOR é trocar a expressão no controller. O front atual (sem Bearer) deixa de funcionar até o passo 2c.
+
+| Recurso (prefixo) | Endpoint | Regra |
+| --- | --- | --- |
+| `/evento` | `listar`, `listarData`, `listarDisponivelData`, `buscar` | autenticado |
+| | `inserir`, `alterar`, `excluir` | ADMIN |
+| `/agendamento` | `listar`, `listarData`, `listarEvento`, `buscar` | autenticado |
+| | `inserir`, `alterar`, `excluir` | ADMIN |
+| `/atividade` | `listar`, `listarData`, `listarAgendamento`, `listarPassadas`, `buscar` | autenticado |
+| | `listarDisponiveis` (corpo `usuario`) | dono ou ADMIN |
+| | `inserir`, `alterar`, `excluir` | ADMIN |
+| `/curso`, `/disciplina`, `/papel` | `listar`, `buscar` | autenticado |
+| | `inserir`, `inserirLote`, `alterar`, `excluir` | ADMIN |
+| `/usuario/disciplina` | `DisciplinasUsuario` (corpo `usuario`) | dono ou ADMIN |
+| | `inserir`, `buscar`, `alterar`, `excluir`, `listar` | ADMIN |
+| `/atividade/inscricao` | `inserir` (usuário do corpo = o do token) | dono ou ADMIN |
+| | `buscar`, `excluir`, `validaPresenca` (inscrição gravada) | dono da inscrição ou ADMIN |
+| | `listarUsuario`, `listarAtividadesInscrito`, `listarAtividadesParticipou`, `somarPontos`, `somarPontosSemestre` | dono ou ADMIN |
+| | `alterar`, `listar`, `listarData`, `listarAtividade` | ADMIN |
+| `/agendamento/staff` | `buscar` (registro gravado) | dono do registro ou ADMIN |
+| | `ValidarPresenca`, `AgendamentosUsuario`, `AgendamentosUsuarioPassado` | dono ou ADMIN |
+| | `inserir`, `alterar`, `excluir`, `listar`, `listarData` | ADMIN |
+| `/certificado` | `atividade/emitir`, `agendamento/emitir` (usuário do corpo) | dono ou ADMIN |
+| `/usuario` | `login`, `inserir` | público |
+| | `buscar`, `alterar`, `excluir`, `cracha` | dono ou ADMIN |
+| | `listar` | ADMIN |
+| `/api/v1/usuarios/{id}/perfil` | `PUT` | ADMIN |
+| `/api/v1/auth` | `login`, `refresh`, `logout` | público |
+| Relatórios de pontuação | (`Gerenciamento*` não tem endpoint; é stub) | ADMIN quando existirem |
+
+Comportamento:
+
+- Sem token: 401. Perfil ou posse insuficiente: 403 (`application/problem+json`); recurso alheio e recurso inexistente dão o mesmo 403 para não-admin (sem oráculo de existência). A validação do corpo (`@Valid`) roda antes da autorização, então um corpo inválido responde 400 mesmo a quem não teria permissão.
+- Mass assignment: `/usuario/alterar` e o cadastro nunca mudam `adm`/`tipoUsuario` (só o `PUT .../perfil`); `inscricao/inserir` ignora `checkIn`/`checkOut`/pontos/data/id enviados; alterar inscrição e todo o CRUD de staff são ADMIN. Inscrever ou emitir certificado para outro usuário é 403.
+- Evento e agendamento são legíveis por qualquer autenticado, então `usuarioCriador`/`usuarioOrganizador` saem **sem** e-mail, endereço, celular, data de nascimento, RG, gênero, matrícula e `adm`. Nenhuma resposta contém `senha`.
+- Limitações do JWT stateless: papéis ficam no token e valem até ele expirar (`JWT_ACCESS_TTL`, 15 min). Usuário excluído ou rebaixado ainda autentica até lá (mas, excluído, não é dono de nada); o refresh falha para usuário excluído. Dívida (Fase 3): DTOs de resposta em vez de entidades e `@Transactional` nos services.
+
+### Rate limit e bloqueio
+
+Em `POST /api/v1/auth/login`, `/api/v1/auth/refresh`, `/usuario/login` e `/usuario/inserir`:
+
+- **Por IP** (janela fixa; `app.security.rate-limit.max-requisicoes`=10 e `janela`=PT1M, por escopo: login v1+legado, refresh, cadastro). O IP é `request.getRemoteAddr()`; `X-Forwarded-For` é **ignorado**. Atrás de proxy/LB confiável, configure `server.forward-headers-strategy=native` para o container resolver o IP real (nunca confie em header arbitrário).
+- **Por e-mail** (só logins): `app.security.lockout.max-falhas`=5 falhas seguidas (intervalo máximo `janela-falhas`=PT15M) bloqueiam o e-mail por `duracao`=PT15M; cada novo bloqueio dobra até `duracao-maxima`=PT24H; sucesso zera tudo; `retencao`=PT24H esquece o histórico. Vale também para e-mail inexistente (resposta idêntica, sem oráculo) e o e-mail é normalizado (minúsculas, sem espaços). Bloqueado, nem a senha correta passa, e o legado responde 429 em vez do 200 vazio. Quem sabe o e-mail de alguém pode bloqueá-lo de propósito (negação de serviço pontual); o limite por IP reduz o alcance.
+- Resposta: 429 `application/problem+json` com `Retry-After` (segundos).
+- Armazenamento **em memória de uma instância** (mapas concorrentes com varredura de expirados e teto `app.security.max-entradas`=100000). Com várias instâncias cada uma conta separado: para multi-instância, migrar para Redis/JDBC. Reiniciar a aplicação zera os contadores. Sem dependência nova (não usa Bucket4j: o bloqueio progressivo não é um token bucket e o relógio injetável simplifica os testes).
+
 ### Cadastro público, perfis e primeiro administrador
 
-O cadastro público (`/usuario/inserir`) **ignora** `adm`, `tipoUsuario` e `id` enviados pelo cliente: grava sempre `adm=false`, `tipoUsuario=VISITANTE` (perfil de menor privilégio; `PROFESSOR`/`FUNCIONARIO` podem receber privilégios no RBAC do passo 2b e `ALUNO` não é verificável no cadastro aberto) e um id novo. `/usuario/alterar` também não altera `adm`/`tipoUsuario`: mantém os valores gravados. Consequência: administradores e demais perfis passam a depender de promoção por um admin (passo 2b) ou de carga via SQL/migração. Enquanto o 2b não existe, crie o primeiro admin cadastrando o usuário normalmente e promovendo-o direto no banco:
+O cadastro público (`/usuario/inserir`) **ignora** `adm`, `tipoUsuario` e `id` enviados pelo cliente: grava sempre `adm=false`, `tipoUsuario=VISITANTE` (perfil de menor privilégio; `PROFESSOR`/`FUNCIONARIO` podem receber privilégios no RBAC do passo 2b e `ALUNO` não é verificável no cadastro aberto) e um id novo. `/usuario/alterar` também não altera `adm`/`tipoUsuario`: mantém os valores gravados. Consequência: administradores e demais perfis dependem de promoção por um admin (`PUT /api/v1/usuarios/{id}/perfil`). O **primeiro** admin continua sendo criado por SQL (não existe admin para promovê-lo): cadastre o usuário normalmente e promova-o direto no banco:
 
 ```sql
 UPDATE tb_usuario SET adm = 1, tipo_usuario = 3 WHERE email_usuario = 'admin@exemplo.com';  -- tipo: 1 VISITANTE, 2 PROFESSOR, 3 FUNCIONARIO, 4 ALUNO
 ```
 
-O novo perfil entra no token no próximo login (o JWT já emitido continua com os papéis antigos até expirar).
+O novo perfil entra no token no próximo login (o JWT já emitido continua com os papéis antigos até expirar). Depois do primeiro admin, use só a API:
+
+```bash
+curl -X PUT localhost:8080/api/v1/usuarios/42/perfil -H "Authorization: Bearer $TOKEN_ADMIN" -H 'Content-Type: application/json' -d '{"tipoUsuario":"FUNCIONARIO","adm":true}'
+```
+
+Só ADMIN chama; responde 200 com `{id, nome, tipoUsuario, authorities}`, 404 se o usuário não existe e 409 se o admin tentar retirar o próprio `adm`. Cada mudança gera um log `perfil alterado: usuario=.. tipoUsuario=.. adm=.. por=..` (só ids).
 
 ### Migração das senhas legadas (`{noop}`)
 
