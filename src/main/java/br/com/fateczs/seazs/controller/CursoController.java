@@ -19,7 +19,7 @@ import br.com.fateczs.seazs.service.CursoService;
 @RequestMapping("/curso")
 public class CursoController {
 
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasAnyRole('ADMIN', 'FUNCIONARIO')")
 	@PostMapping("/inserir")
 	@ResponseBody
 	public void inserirCurso(@Valid @RequestBody Curso curso) {
@@ -33,14 +33,14 @@ public class CursoController {
 		return cursoServ.buscar(curso);
 	}
 	
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasAnyRole('ADMIN', 'FUNCIONARIO')")
 	@PostMapping("/alterar")
 	@ResponseBody
 	public void alterarCurso(@Valid @RequestBody Curso curso) {
 		cursoServ.alterar(curso);
 	}
 	
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasAnyRole('ADMIN', 'FUNCIONARIO')")
 	@PostMapping("/excluir")
 	@ResponseBody
 	public void excluirCurso(@Valid @RequestBody Curso curso) {

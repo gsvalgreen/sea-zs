@@ -19,14 +19,14 @@ import br.com.fateczs.seazs.service.DisciplinaService;
 @RequestMapping("/disciplina")
 public class DisciplinaController {
 	
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasAnyRole('ADMIN', 'FUNCIONARIO')")
 	@PostMapping("/inserir")
 	@ResponseBody
 	public void inserirDisciplina(@Valid @RequestBody Disciplina disciplina) {
 		disciplinaServ.inserir(disciplina);
 	}
 	
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasAnyRole('ADMIN', 'FUNCIONARIO')")
 	@PostMapping("/inserirLote")
 	@ResponseBody
 	public void inserirLoteDisciplina(@Valid @RequestBody List<Disciplina> disciplinas) {
@@ -40,14 +40,14 @@ public class DisciplinaController {
 		return disciplinaServ.buscar(disciplina);
 	}
 	
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasAnyRole('ADMIN', 'FUNCIONARIO')")
 	@PostMapping("/alterar")
 	@ResponseBody
 	public void alterarDisciplina(@Valid @RequestBody Disciplina disciplina) {
 		disciplinaServ.alterar(disciplina);
 	}
 	
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasAnyRole('ADMIN', 'FUNCIONARIO')")
 	@PostMapping("/excluir")
 	@ResponseBody
 	public void excluirDisciplina(@Valid @RequestBody Disciplina disciplina) {

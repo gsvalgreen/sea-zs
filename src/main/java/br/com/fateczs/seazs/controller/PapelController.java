@@ -19,7 +19,7 @@ import br.com.fateczs.seazs.service.PapelService;
 @RequestMapping("/papel")
 public class PapelController {
 	
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasAnyRole('ADMIN', 'FUNCIONARIO')")
 	@PostMapping("/inserir")
 	@ResponseBody
 	public void inserirPapel(@Valid @RequestBody Papel papel) {
@@ -33,14 +33,14 @@ public class PapelController {
 		return papelServ.buscar(papel);
 	}
 	
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasAnyRole('ADMIN', 'FUNCIONARIO')")
 	@PostMapping("/alterar")
 	@ResponseBody
 	public void alterarPapel(@Valid @RequestBody Papel papel) {
 		papelServ.alterar(papel);
 	}
 	
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasAnyRole('ADMIN', 'FUNCIONARIO')")
 	@PostMapping("/excluir")
 	@ResponseBody
 	public void excluirPapel(@Valid @RequestBody Papel papel) {

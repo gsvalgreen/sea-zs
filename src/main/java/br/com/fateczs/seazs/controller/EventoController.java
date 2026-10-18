@@ -21,7 +21,7 @@ import br.com.fateczs.seazs.service.EventoService;
 @RequestMapping("/evento")
 public class EventoController {
 	
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasAnyRole('ADMIN', 'FUNCIONARIO') or (hasRole('PROFESSOR') and #evento.id == null)")
 	@PostMapping("/inserir")
 	@ResponseBody
 	public void inserirEvento(@Valid @RequestBody Evento evento) {
@@ -36,14 +36,14 @@ public class EventoController {
 		return eventoServ.buscar(evento);
 	}
 	
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasAnyRole('ADMIN', 'FUNCIONARIO')")
 	@PostMapping("/alterar")
 	@ResponseBody
 	public void alterarEvento(@Valid @RequestBody Evento evento) {
 		eventoServ.alterar(evento);
 	}
 	
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasAnyRole('ADMIN', 'FUNCIONARIO')")
 	@PostMapping("/excluir")
 	@ResponseBody
 	public void excluirEvento(@Valid @RequestBody Evento evento) {

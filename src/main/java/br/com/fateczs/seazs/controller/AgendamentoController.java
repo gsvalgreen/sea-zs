@@ -30,7 +30,7 @@ public class AgendamentoController {
 	 * @param agendamento Objeto Agendamento totalmente Preenchido* para Inserts. 
 	 * Atributos de Relacionamento requerem apenas o ID preenchido (exemplo: Id do usuárioOrganizador).
 	 */
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasAnyRole('ADMIN', 'FUNCIONARIO') or (hasRole('PROFESSOR') and #agendamento.id == null)")
 	@PostMapping("/inserir")
 	@ResponseBody
 	public void inserirAgendamento(@Valid @RequestBody Agendamento agendamento) {
@@ -55,7 +55,7 @@ public class AgendamentoController {
 	 * Atributos de Relacionamento requerem apenas o ID. 
 	 * Qualquer atributo da Entidade não preenchido será salvo como null no BD.
 	 */
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasAnyRole('ADMIN', 'FUNCIONARIO')")
 	@PostMapping("/alterar")
 	@ResponseBody
 	public void alterarAgendamento(@Valid @RequestBody Agendamento agendamento) {
@@ -66,7 +66,7 @@ public class AgendamentoController {
 	 * Acessa o Serviço que exclui o Agendamento informado
 	 * @param agendamento Objeto preenchido apenas com o ID.
 	 */
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasAnyRole('ADMIN', 'FUNCIONARIO')")
 	@PostMapping("/excluir")
 	@ResponseBody
 	public void excluirAgendamento(@Valid @RequestBody Agendamento agendamento) {

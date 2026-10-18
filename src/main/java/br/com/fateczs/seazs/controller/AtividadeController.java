@@ -21,7 +21,7 @@ import br.com.fateczs.seazs.service.AtividadeService;
 @RequestMapping("/atividade")
 public class AtividadeController {
 	
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasAnyRole('ADMIN', 'FUNCIONARIO') or (hasRole('PROFESSOR') and #atividade.id == null)")
 	@PostMapping("/inserir")
 	@ResponseBody
 	public void inserirAtividade(@Valid @RequestBody Atividade atividade) {
@@ -35,14 +35,14 @@ public class AtividadeController {
 		return atividadeServ.buscar(atividade);
 	}
 	
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasAnyRole('ADMIN', 'FUNCIONARIO')")
 	@PostMapping("/alterar")
 	@ResponseBody
 	public void alterarAtividade(@Valid @RequestBody Atividade atividade) {
 		atividadeServ.alterar(atividade);
 	}
 	
-	@PreAuthorize("hasRole('ADMIN')")
+	@PreAuthorize("hasAnyRole('ADMIN', 'FUNCIONARIO')")
 	@PostMapping("/excluir")
 	@ResponseBody
 	public void excluirAtividade(@Valid @RequestBody Atividade atividade) {

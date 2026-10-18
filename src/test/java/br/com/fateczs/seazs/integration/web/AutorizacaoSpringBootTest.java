@@ -59,6 +59,8 @@ public class AutorizacaoSpringBootTest {
 	@Autowired
 	private PapelRepository papeis;
 	@Autowired
+	private br.com.fateczs.seazs.repository.CursoRepository cursos;
+	@Autowired
 	private EventoRepository eventos;
 	@Autowired
 	private AgendamentoRepository agendamentos;
@@ -207,6 +209,64 @@ public class AutorizacaoSpringBootTest {
 		chamar(ana, "/agendamento/staff/inserir", "{}", 403);
 		chamar(ana, "/atividade/alterar", atividade, 403);
 		chamar(ana, "/papel/excluir", papel, 403);
+	}
+
+	// ---- escrita de estruturas por perfil (FUNCIONARIO tudo; PROFESSOR so cria evento/agendamento/atividade)
+
+	@Test
+	public void funcionarioSemAdmEscreveEstruturasMasNaoAdministraUsuariosNemStaff() throws Exception {
+		Usuario func = novo("func", TipoUsuario.FUNCIONARIO, false);
+		Evento evento = DadosTeste.evento("Nova semana", func);
+		chamar(func, "/evento/inserir", evento, 200);
+		chamar(func, "/evento/alterar", atividade.getAgendamento().getEvento(), 200);
+		chamar(func, "/agendamento/inserir", DadosTeste.agendamento(atividade.getAgendamento().getEvento(), func,
+				DadosTeste.PASSADO, DadosTeste.FUTURO), 200);
+		chamar(func, "/atividade/alterar", atividade, 200);
+		chamar(func, "/papel/inserir", novoPapel(), 200);
+		chamar(func, "/papel/excluir", papeis.save(DadosTeste.papel("Descartavel-" + UUID.randomUUID())), 200);
+		chamar(func, "/disciplina/inserir", DadosTeste.disciplina("D-" + UUID.randomUUID().toString().substring(0, 8), cursos.save(DadosTeste.curso("Curso-" + UUID.randomUUID()))), 200);
+		chamar(func, "/usuario/disciplina/excluir", "{}", 200); // vinculo: passa da autorizacao (nada a excluir)
+
+		chamar(func, "/usuario/listar", "{}", 403);
+		chamar(func, "/agendamento/staff/inserir", "{}", 403);
+		chamar(func, "/atividade/inscricao/alterar", inscricaoDaAna, 403);
+		put403(func, "/api/v1/usuarios/" + ana.getId() + "/perfil", "{\"tipoUsuario\":\"ALUNO\",\"adm\":true}");
+	}
+
+	@Test
+	public void professorSoCriaEventoAgendamentoEAtividade_naoEditaNemExcluiNemMexeEmOutrasEstruturas() throws Exception {
+		Usuario prof = novo("prof", TipoUsuario.PROFESSOR, false);
+		Evento eventoExistente = atividade.getAgendamento().getEvento();
+
+		chamar(prof, "/evento/inserir", DadosTeste.evento("Evento do professor", prof), 200);
+		chamar(prof, "/agendamento/inserir", DadosTeste.agendamento(eventoExistente, prof, DadosTeste.PASSADO, DadosTeste.FUTURO), 200);
+		chamar(prof, "/atividade/inserir", DadosTeste.atividade("Minicurso", atividade.getAgendamento(), DadosTeste.PASSADO,
+				DadosTeste.FUTURO), 200);
+
+		// inserir com id preenchido sobrescreveria um registro existente: e edicao disfarcada, negada
+		chamar(prof, "/evento/inserir", eventoExistente, 403);
+		chamar(prof, "/agendamento/inserir", atividade.getAgendamento(), 403);
+		chamar(prof, "/atividade/inserir", atividade, 403);
+
+		chamar(prof, "/evento/alterar", eventoExistente, 403);
+		chamar(prof, "/evento/excluir", eventoExistente, 403);
+		chamar(prof, "/agendamento/alterar", atividade.getAgendamento(), 403);
+		chamar(prof, "/agendamento/excluir", atividade.getAgendamento(), 403);
+		chamar(prof, "/atividade/alterar", atividade, 403);
+		chamar(prof, "/atividade/excluir", atividade, 403);
+		chamar(prof, "/papel/inserir", novoPapel(), 403);
+		chamar(prof, "/disciplina/inserir", DadosTeste.disciplina("D1", null), 403);
+		chamar(prof, "/usuario/disciplina/inserir", "{}", 403);
+		// leitura segue aberta a qualquer autenticado
+		chamar(prof, "/evento/listar", "{}", 200);
+	}
+
+	@Test
+	public void alunoNaoEscreveEstruturaNenhuma() throws Exception {
+		chamar(ana, "/evento/inserir", DadosTeste.evento("Evento da aluna", ana), 403);
+		chamar(ana, "/agendamento/inserir", atividade.getAgendamento(), 403);
+		chamar(ana, "/atividade/inserir", DadosTeste.atividade("X", atividade.getAgendamento(), DadosTeste.PASSADO, DadosTeste.FUTURO), 403);
+		chamar(ana, "/disciplina/inserir", DadosTeste.disciplina("D2", null), 403);
 	}
 
 	// ---- promocao por admin

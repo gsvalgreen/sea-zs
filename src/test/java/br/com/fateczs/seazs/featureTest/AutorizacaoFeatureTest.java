@@ -60,6 +60,21 @@ public class AutorizacaoFeatureTest extends FeatureTestBase {
 	}
 
 	@Test
+	public void promocaoParaProfessorNaoEscreveEstruturaMasFuncionarioSemAdmEscreve() throws Exception {
+		String email = unico("perfil") + "@teste.com";
+		int id = criarUsuario(email, "Segredo123");
+		String papel = "{\"nome\":\"" + unico("p") + "\",\"descricao\":\"d\"}";
+
+		mvc.perform(com(tokenAdmin(), put("/api/v1/usuarios/" + id + "/perfil").content("{\"tipoUsuario\":\"PROFESSOR\",\"adm\":false}")))
+				.andExpect(status().isOk());
+		mvc.perform(com(login(email, "Segredo123"), post("/papel/inserir").content(papel))).andExpect(status().isForbidden());
+
+		mvc.perform(com(tokenAdmin(), put("/api/v1/usuarios/" + id + "/perfil").content("{\"tipoUsuario\":\"FUNCIONARIO\",\"adm\":false}")))
+				.andExpect(status().isOk());
+		mvc.perform(com(login(email, "Segredo123"), post("/papel/inserir").content(papel))).andExpect(status().isOk());
+	}
+
+	@Test
 	public void semToken_401_eEmailDuplicado_409_noMySql() throws Exception {
 		mvc.perform(post("/usuario/listar").contentType(MediaType.APPLICATION_JSON).content("{}"))
 				.andExpect(status().isUnauthorized());

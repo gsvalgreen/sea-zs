@@ -37,6 +37,8 @@ Depois do `revisor-codigo` e sempre antes de abrir o PR, quem orquestra aciona o
 ## Segurança (resumo; detalhes e matriz no README)
 
 - Default-deny em `SecurityConfig`; regra por handler com `@PreAuthorize` (bean `Autorizacao` para posse: `ehDonoOuAdmin(id)`, `ehDonoDaInscricaoOuAdmin`, `ehDonoDoStaffOuAdmin`). Todo handler novo de controller precisa de `@PreAuthorize` (`ControllersProtegidosTest` falha sem). O usuário vem sempre do `sub` do JWT, nunca do corpo.
+- Escrita de estruturas (evento, curso, disciplina, papel, agendamento, atividade, vínculo): ADMIN e FUNCIONARIO (`hasAnyRole('ADMIN', 'FUNCIONARIO')`); PROFESSOR apenas cria (`inserir` com `id` nulo) evento, agendamento e atividade. Cadastro público sempre VISITANTE/`adm=false`. Nunca deixar o sistema sem ADMIN (`alterarPerfil`/`excluir` travam e contam admins).
+- Rate limit por IP usa o caminho decodificado (`UrlPathHelper`), nunca `getRequestURI()` cru; lockout reserva a tentativa atomicamente (`BloqueioLogin.reservarTentativa`).
 - `adm`/`tipoUsuario` só mudam por `PUT /api/v1/usuarios/{id}/perfil` (ADMIN); cadastro e `/usuario/alterar` os ignoram.
 - Rate limit por IP (`LimitadorPorIp`, interceptor) e lockout por e-mail (`BloqueioLogin`, em `AuthServiceImpl`), em memória, configuráveis por `app.security.*`; testes usam `RelogioMutavel` (sem sleep).
 - Testes de `@WebMvcTest` com `@ComSeguranca` autenticam com `TokensTeste.admin()/como(id, papeis)`.

@@ -54,21 +54,25 @@ Senha vazia ou só com espaços é recusada (400) no cadastro e no login; no leg
 
 Default-deny: `anyRequest().authenticated()`. Públicos: `/api/v1/auth/**`, `POST /usuario/login`, `POST /usuario/inserir`, `/actuator/health` e preflight CORS. O restante é decidido por `@PreAuthorize` em cada handler (method security); o teste `ControllersProtegidosTest` falha se um handler novo ficar sem a anotação. Perfis: `ROLE_<TipoUsuario>` (VISITANTE, PROFESSOR, FUNCIONARIO, ALUNO) e `ROLE_ADMIN` quando `adm=true`. "Dono" = o `sub` do JWT (id do usuário) é o usuário do recurso; nunca o que vem no corpo. Posse de inscrição/staff é conferida pelo registro gravado no banco.
 
-Decisão: o front não restringe nada por perfil (só guarda `adm`/`tipoUsuario` no `sessionStorage`), então a escrita de estrutura (evento, curso, disciplina, papel, agendamento, atividade, vínculo usuário-disciplina) ficou **só com ADMIN**, o mais restritivo; liberar FUNCIONARIO/PROFESSOR é trocar a expressão no controller. O front atual (sem Bearer) deixa de funcionar até o passo 2c.
+Decisão (definida pelo dono do produto): a escrita de estrutura (evento, curso, disciplina, papel, agendamento, atividade, vínculo usuário-disciplina) é de **ADMIN e FUNCIONARIO** (tudo: inserir, alterar, excluir). **PROFESSOR só cria (`inserir`) evento, agendamento e atividade**: não edita nem exclui, e não toca em curso, disciplina, papel nem vínculo. O `inserir` do professor exige `id` nulo no corpo (com `id`, o `save` sobrescreveria um registro existente, o que seria edição disfarçada: 403). Leitura continua aberta a qualquer autenticado; os demais perfis (VISITANTE, ALUNO) não escrevem estrutura. Staff (`/agendamento/staff`), alterar inscrição, listagens sensíveis e a promoção de perfil seguem só ADMIN; `buscar`/`listar` de `/usuario/disciplina` também. O cadastro público grava sempre VISITANTE e `adm=false`. O front atual (sem Bearer) deixa de funcionar até o passo 2c.
 
 | Recurso (prefixo) | Endpoint | Regra |
 | --- | --- | --- |
 | `/evento` | `listar`, `listarData`, `listarDisponivelData`, `buscar` | autenticado |
-| | `inserir`, `alterar`, `excluir` | ADMIN |
+| | `inserir` | ADMIN, FUNCIONARIO ou PROFESSOR (só criar, `id` nulo) |
+| | `alterar`, `excluir` | ADMIN ou FUNCIONARIO |
 | `/agendamento` | `listar`, `listarData`, `listarEvento`, `buscar` | autenticado |
-| | `inserir`, `alterar`, `excluir` | ADMIN |
+| | `inserir` | ADMIN, FUNCIONARIO ou PROFESSOR (só criar, `id` nulo) |
+| | `alterar`, `excluir` | ADMIN ou FUNCIONARIO |
 | `/atividade` | `listar`, `listarData`, `listarAgendamento`, `listarPassadas`, `buscar` | autenticado |
 | | `listarDisponiveis` (corpo `usuario`) | dono ou ADMIN |
-| | `inserir`, `alterar`, `excluir` | ADMIN |
+| | `inserir` | ADMIN, FUNCIONARIO ou PROFESSOR (só criar, `id` nulo) |
+| | `alterar`, `excluir` | ADMIN ou FUNCIONARIO |
 | `/curso`, `/disciplina`, `/papel` | `listar`, `buscar` | autenticado |
-| | `inserir`, `inserirLote`, `alterar`, `excluir` | ADMIN |
+| | `inserir`, `inserirLote`, `alterar`, `excluir` | ADMIN ou FUNCIONARIO |
 | `/usuario/disciplina` | `DisciplinasUsuario` (corpo `usuario`) | dono ou ADMIN |
-| | `inserir`, `buscar`, `alterar`, `excluir`, `listar` | ADMIN |
+| | `inserir`, `alterar`, `excluir` | ADMIN ou FUNCIONARIO |
+| | `buscar`, `listar` | ADMIN |
 | `/atividade/inscricao` | `inserir` (usuário do corpo = o do token) | dono ou ADMIN |
 | | `buscar`, `excluir`, `validaPresenca` (inscrição gravada) | dono da inscrição ou ADMIN |
 | | `listarUsuario`, `listarAtividadesInscrito`, `listarAtividadesParticipou`, `somarPontos`, `somarPontosSemestre` | dono ou ADMIN |
@@ -80,13 +84,16 @@ Decisão: o front não restringe nada por perfil (só guarda `adm`/`tipoUsuario`
 | `/usuario` | `login`, `inserir` | público |
 | | `buscar`, `alterar`, `excluir`, `cracha` | dono ou ADMIN |
 | | `listar` | ADMIN |
-| `/api/v1/usuarios/{id}/perfil` | `PUT` | ADMIN |
+| `/api/v1/usuarios/{id}/perfil` | `PUT` | ADMIN (nunca deixa o sistema sem ADMIN: 409) |
 | `/api/v1/auth` | `login`, `refresh`, `logout` | público |
 | Relatórios de pontuação | (`Gerenciamento*` não tem endpoint; é stub) | ADMIN quando existirem |
 
 Comportamento:
 
 - Sem token: 401. Perfil ou posse insuficiente: 403 (`application/problem+json`); recurso alheio e recurso inexistente dão o mesmo 403 para não-admin (sem oráculo de existência). A validação do corpo (`@Valid`) roda antes da autorização, então um corpo inválido responde 400 mesmo a quem não teria permissão.
+- Última conta ADMIN: `PUT .../perfil` e `/usuario/excluir` recusam (409) a operação que deixaria o sistema sem administrador (a lista de admins é lida com lock de escrita, então dois rebaixamentos/exclusões concorrentes são serializados). O admin também não retira o próprio `adm`.
+- Sessões: mudar o perfil (`PUT .../perfil`) ou a senha (`/usuario/alterar`) apaga os refresh tokens do usuário; o access token já emitido vale até expirar (15 min).
+- `/usuario/alterar` não exige a senha atual (contrato legado: o corpo traz só a nova senha). Quem tem um access token válido pode trocá-la; mitigado pelo TTL curto e pela revogação dos refresh tokens. Exigir a senha atual é mudança de contrato, prevista para a API `/api/v1` (Fase 3).
 - Mass assignment: `/usuario/alterar` e o cadastro nunca mudam `adm`/`tipoUsuario` (só o `PUT .../perfil`); `inscricao/inserir` ignora `checkIn`/`checkOut`/pontos/data/id enviados; alterar inscrição e todo o CRUD de staff são ADMIN. Inscrever ou emitir certificado para outro usuário é 403.
 - Evento e agendamento são legíveis por qualquer autenticado, então `usuarioCriador`/`usuarioOrganizador` saem **sem** e-mail, endereço, celular, data de nascimento, RG, gênero, matrícula e `adm`. Nenhuma resposta contém `senha`.
 - Limitações do JWT stateless: papéis ficam no token e valem até ele expirar (`JWT_ACCESS_TTL`, 15 min). Usuário excluído ou rebaixado ainda autentica até lá (mas, excluído, não é dono de nada); o refresh falha para usuário excluído. Dívida (Fase 3): DTOs de resposta em vez de entidades e `@Transactional` nos services.
@@ -97,7 +104,9 @@ Em `POST /api/v1/auth/login`, `/api/v1/auth/refresh`, `/usuario/login` e `/usuar
 
 - **Por IP** (janela fixa; `app.security.rate-limit.max-requisicoes`=10 e `janela`=PT1M, por escopo: login v1+legado, refresh, cadastro). O IP é `request.getRemoteAddr()`; `X-Forwarded-For` é **ignorado**. Atrás de proxy/LB confiável, configure `server.forward-headers-strategy=native` para o container resolver o IP real (nunca confie em header arbitrário).
 - **Por e-mail** (só logins): `app.security.lockout.max-falhas`=5 falhas seguidas (intervalo máximo `janela-falhas`=PT15M) bloqueiam o e-mail por `duracao`=PT15M; cada novo bloqueio dobra até `duracao-maxima`=PT24H; sucesso zera tudo; `retencao`=PT24H esquece o histórico. Vale também para e-mail inexistente (resposta idêntica, sem oráculo) e o e-mail é normalizado (minúsculas, sem espaços). Bloqueado, nem a senha correta passa, e o legado responde 429 em vez do 200 vazio. Quem sabe o e-mail de alguém pode bloqueá-lo de propósito (negação de serviço pontual); o limite por IP reduz o alcance.
-- Resposta: 429 `application/problem+json` com `Retry-After` (segundos).
+- Resposta: 429 `application/problem+json` com `Retry-After` (segundos). O login legado (`/usuario/login`) também pode responder 429 (antes só 200): é um status novo no contrato legado, mantido de propósito (um 200 vazio esconderia o bloqueio); o front trata isso no passo 2c.
+- O escopo do limite por IP usa o caminho decodificado e normalizado (`/usuario/%6cogin`, `;x=1` e `//` caem no mesmo contador). IPv6 é agrupado por /64. Os mapas têm teto (`app.security.max-entradas`=100000): cheio, varre os vencidos e, se ainda faltar espaço, recusa chaves novas com 429 (falha fechada).
+- A tentativa de login é reservada de forma atômica por e-mail antes de verificar a senha (uma rajada não passa de `max-falhas`); a chave do e-mail segue a collation `utf8mb4_unicode_ci` (caixa, acentos e caracteres ignoráveis são o mesmo e-mail).
 - Armazenamento **em memória de uma instância** (mapas concorrentes com varredura de expirados e teto `app.security.max-entradas`=100000). Com várias instâncias cada uma conta separado: para multi-instância, migrar para Redis/JDBC. Reiniciar a aplicação zera os contadores. Sem dependência nova (não usa Bucket4j: o bloqueio progressivo não é um token bucket e o relógio injetável simplifica os testes).
 
 ### Cadastro público, perfis e primeiro administrador
