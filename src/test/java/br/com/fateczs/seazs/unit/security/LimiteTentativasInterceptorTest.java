@@ -97,4 +97,20 @@ public class LimiteTentativasInterceptorTest {
 			assertTrue(chamar(requisicao("GET", "/usuario/login", "10.0.0.1")));
 		}
 	}
+
+	@Test
+	public void caminhoComByteCodificadoNaoBurlaOLimite() {
+		chamar(requisicao("POST", "/usuario/login", "10.0.0.1"));
+		chamar(requisicao("POST", "/usuario/%6cogin", "10.0.0.1"));
+
+		assertThrows(LimiteExcedidoException.class, () -> chamar(requisicao("POST", "/api/v1/auth/%6cogin", "10.0.0.1")));
+	}
+
+	@Test
+	public void parametroDeCaminhoEBarrasDuplicadasNaoBurlamOLimite() {
+		chamar(requisicao("POST", "/usuario/inserir;x=1", "10.0.0.1"));
+		chamar(requisicao("POST", "//usuario//inserir", "10.0.0.1"));
+
+		assertThrows(LimiteExcedidoException.class, () -> chamar(requisicao("POST", "/usuario/inserir", "10.0.0.1")));
+	}
 }

@@ -83,15 +83,54 @@ public class LimitadorPorIpTest {
 	}
 
 	@Test
-	public void comMapaCheioIpsNovosNaoSaoRegistradosEMemoriaNaoCresce() {
+	public void comMapaCheioIpNovoEhRecusadoFalhaFechadaEMemoriaNaoCresce() {
 		LimitadorPorIp pequeno = new LimitadorPorIp(relogio, props(1, 2));
 		pequeno.registrar("1", "login");
 		pequeno.registrar("2", "login");
 
-		assertFalse(pequeno.registrar("3", "login").isPresent());
-		assertFalse(pequeno.registrar("3", "login").isPresent()); // nao registrado: segue livre
+		assertEquals(Duration.ofMinutes(1), pequeno.registrar("3", "login").get());
 		assertEquals(2, pequeno.tamanho());
 		assertTrue(pequeno.registrar("1", "login").isPresent()); // existente continua limitado
+	}
+
+	@Test
+	public void comMapaCheioExpiradasSaoVarridasAntesDeRecusar() {
+		LimitadorPorIp pequeno = new LimitadorPorIp(relogio, props(1, 2));
+		pequeno.registrar("1", "login");
+		pequeno.registrar("2", "login");
+		relogio.avancar(Duration.ofSeconds(61));
+
+		assertFalse(pequeno.registrar("3", "login").isPresent());
+		assertEquals(1, pequeno.tamanho());
+	}
+
+	@Test
+	public void ipv6DoMesmoPrefixo64CompartilhaOContador() {
+		for (int i = 0; i < 3; i++) {
+			limitador.registrar("2001:db8:1:2:aaaa:bbbb:cccc:" + i, "login");
+		}
+
+		assertTrue(limitador.registrar("2001:db8:1:2::ffff", "login").isPresent());
+		assertFalse(limitador.registrar("2001:db8:1:3::1", "login").isPresent()); // outro /64
+		assertEquals(2, limitador.tamanho());
+	}
+
+	@Test
+	public void ipv4MapeadoEmIpv6UsaOEnderecoIpv4() {
+		for (int i = 0; i < 3; i++) {
+			limitador.registrar("10.0.0.1", "login");
+		}
+
+		assertTrue(limitador.registrar("::ffff:10.0.0.1", "login").isPresent());
+	}
+
+	@Test
+	public void valorNaoLiteralNaoFazConsultaDeDnsNemQuebra() {
+		for (int i = 0; i < 3; i++) {
+			limitador.registrar("host:invalido!", "login");
+		}
+
+		assertTrue(limitador.registrar("host:invalido!", "login").isPresent());
 	}
 
 	@Test

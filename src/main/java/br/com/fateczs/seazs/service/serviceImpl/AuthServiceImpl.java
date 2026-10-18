@@ -106,20 +106,15 @@ public class AuthServiceImpl implements AuthService {
 	}
 
 	/**
-	 * Aplica o bloqueio temporario por e-mail ao redor da autenticacao: bloqueado, nem verifica a senha (429); falha
-	 * conta para o bloqueio; sucesso zera. O e-mail e contado como foi digitado (existindo ou nao), entao a resposta
-	 * nao revela se ele existe.
+	 * Aplica o bloqueio temporario por e-mail ao redor da autenticacao: a tentativa e reservada de forma atomica antes
+	 * de verificar a senha (bloqueado, nem verifica: 429); sem sucesso a reserva fica contada como falha; sucesso
+	 * zera. O e-mail e contado como foi digitado (existindo ou nao), entao a resposta nao revela se ele existe.
 	 */
 	private Usuario autenticarComBloqueio(String email, String senha) {
-		bloqueio.exigirLiberado(email);
-		try {
-			Usuario usuario = autenticar(email, senha);
-			bloqueio.registrarSucesso(email);
-			return usuario;
-		} catch (BadCredentialsException e) {
-			bloqueio.registrarFalha(email);
-			throw e;
-		}
+		bloqueio.reservarTentativa(email);
+		Usuario usuario = autenticar(email, senha);
+		bloqueio.registrarSucesso(email);
+		return usuario;
 	}
 
 	/** Valida e-mail/senha (rehash BCrypt de senha legada incluso) e devolve o usuario. */

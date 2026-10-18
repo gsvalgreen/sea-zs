@@ -7,6 +7,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,9 +42,18 @@ public class BloqueioLoginTest {
 		bloqueio = new BloqueioLogin(relogio, props(5, 100));
 	}
 
+	/** Tentativas sem sucesso: cada reserva conta como falha; tentativas durante o bloqueio sao recusadas. */
 	private void falhar(String email, int vezes) {
+		falhar(bloqueio, email, vezes);
+	}
+
+	private static void falhar(BloqueioLogin alvo, String email, int vezes) {
 		for (int i = 0; i < vezes; i++) {
-			bloqueio.registrarFalha(email);
+			try {
+				alvo.reservarTentativa(email);
+			} catch (LimiteExcedidoException e) {
+				// bloqueado: nao conta
+			}
 		}
 	}
 
@@ -45,7 +62,6 @@ public class BloqueioLoginTest {
 		falhar("ana@teste.com", 4);
 
 		assertFalse(bloqueio.restante("ana@teste.com").isPresent());
-		bloqueio.exigirLiberado("ana@teste.com");
 	}
 
 	@Test
@@ -53,7 +69,7 @@ public class BloqueioLoginTest {
 		falhar("ana@teste.com", 5);
 
 		assertEquals(Duration.ofMinutes(15), bloqueio.restante("ana@teste.com").get());
-		LimiteExcedidoException ex = assertThrows(LimiteExcedidoException.class, () -> bloqueio.exigirLiberado("ana@teste.com"));
+		LimiteExcedidoException ex = assertThrows(LimiteExcedidoException.class, () -> bloqueio.reservarTentativa("ana@teste.com"));
 		assertEquals(900, ex.segundos());
 	}
 
@@ -149,21 +165,71 @@ public class BloqueioLoginTest {
 	}
 
 	@Test
-	public void comMapaCheioEmailsNovosNaoSaoRegistrados() {
-		BloqueioLogin pequeno = new BloqueioLogin(relogio, props(1, 2));
-		pequeno.registrarFalha("a@x.com");
-		pequeno.registrarFalha("b@x.com");
-		pequeno.registrarFalha("c@x.com"); // teto: nao registra
+	public void comMapaCheioEmailNovoEhRecusadoMasExistenteSegueNormal() {
+		BloqueioLogin pequeno = new BloqueioLogin(relogio, props(3, 2));
+		pequeno.reservarTentativa("a@x.com");
+		pequeno.reservarTentativa("b@x.com");
 
+		assertThrows(LimiteExcedidoException.class, () -> pequeno.reservarTentativa("c@x.com")); // falha fechada
 		assertEquals(2, pequeno.tamanho());
-		assertFalse(pequeno.restante("c@x.com").isPresent());
-		assertTrue(pequeno.restante("a@x.com").isPresent());
+		pequeno.reservarTentativa("a@x.com"); // existente continua sendo contado
+	}
+
+	@Test
+	public void comMapaCheioHistoricosVencidosSaoVarridosAntesDeRecusar() {
+		BloqueioLogin pequeno = new BloqueioLogin(relogio, props(3, 2));
+		pequeno.reservarTentativa("a@x.com");
+		pequeno.reservarTentativa("b@x.com");
+		relogio.avancar(Duration.ofHours(25));
+
+		pequeno.reservarTentativa("c@x.com"); // varre os vencidos e registra
+
+		assertEquals(1, pequeno.tamanho());
+	}
+
+	@Test
+	public void rajadaConcorrenteNaoUltrapassaOLimiteDeTentativas() throws Exception {
+		int threads = 32;
+		ExecutorService pool = Executors.newFixedThreadPool(threads);
+		CountDownLatch largada = new CountDownLatch(1);
+		AtomicInteger liberadas = new AtomicInteger();
+		List<Future<?>> tarefas = new ArrayList<>();
+		for (int i = 0; i < threads; i++) {
+			tarefas.add(pool.submit(() -> {
+				largada.await();
+				try {
+					bloqueio.reservarTentativa("ana@teste.com");
+					liberadas.incrementAndGet();
+				} catch (LimiteExcedidoException e) {
+					// bloqueado
+				}
+				return null;
+			}));
+		}
+		largada.countDown();
+		for (Future<?> f : tarefas) {
+			f.get(10, TimeUnit.SECONDS);
+		}
+		pool.shutdown();
+
+		assertEquals(5, liberadas.get());
+	}
+
+	@Test
+	public void chaveAcompanhaACollationDoBancoAcentosCaixaEIgnoraveis() {
+		falhar("jose@teste.com", 2);
+		falhar("JOS\u00c9@teste.com", 1); // acento e caixa
+		falhar("jose\u200b@teste.com", 1); // espaco de largura zero (ignoravel)
+		falhar("jo\u0073\u0065\u0301@teste.com", 1); // e + acento combinante
+
+		assertTrue(bloqueio.restante("jose@teste.com").isPresent());
+		assertEquals(1, bloqueio.tamanho());
 	}
 
 	@Test
 	public void emailNuloOuEnormeNaoQuebra() {
-		bloqueio.registrarFalha(null);
-		bloqueio.registrarFalha("a".repeat(5000));
+		bloqueio.reservarTentativa(null);
+		bloqueio.reservarTentativa("a".repeat(5000));
 
 		assertFalse(bloqueio.restante(null).isPresent());
 		assertEquals(2, bloqueio.tamanho());

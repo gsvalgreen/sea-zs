@@ -200,4 +200,45 @@ public class LimiteTentativasSpringBootTest {
 		}
 		assertFalse(login("/api/v1/auth/login", ipUnico(), u.getEmail(), "errada").getStatus() == 429);
 	}
+
+	private MockHttpServletResponse loginUri(String uri, String ip) throws Exception {
+		return mvc.perform(post(java.net.URI.create(uri)).contentType(MediaType.APPLICATION_JSON)
+				.content("{\"email\":\"a@nao.com\",\"senha\":\"x\"}").with(r -> {
+					r.setRemoteAddr(ip);
+					return r;
+				})).andReturn().getResponse();
+	}
+
+	@Test
+	public void caminhoComByteCodificadoNaoBurlaOLimite() throws Exception {
+		String ip = ipUnico();
+		for (int i = 0; i < 2; i++) {
+			loginUri("/api/v1/auth/%6cogin", ip);
+			loginUri("/usuario/%6cogin", ip);
+		}
+
+		assertEquals(429, loginUri("/api/v1/auth/login", ip).getStatus());
+		assertEquals(429, loginUri("/usuario/%6cogin", ip).getStatus());
+		assertEquals(429, loginUri("/api/v1/auth/%6cogin", ip).getStatus());
+	}
+
+	@Test
+	public void ipv6DoMesmoPrefixo64CompartilhaOLimite() throws Exception {
+		String base = "2001:db8:" + Integer.toHexString((int) (Math.random() * 60000) + 1) + ":1:";
+		for (int i = 0; i < 4; i++) {
+			assertEquals(401, login("/api/v1/auth/login", base + ":" + (i + 1), "x" + i + "@nao.com", "x").getStatus());
+		}
+
+		assertEquals(429, login("/api/v1/auth/login", base + ":ffff", "x9@nao.com", "x").getStatus());
+	}
+
+	@Test
+	public void variantesDoEmailPelaCollationDoBancoCompartilhamOBloqueio() throws Exception {
+		String base = "acento-" + UUID.randomUUID().toString().substring(0, 8);
+		for (int i = 0; i < 5; i++) {
+			login("/api/v1/auth/login", ipUnico(), base + "@nao.com", "errada");
+		}
+
+		assertEquals(429, login("/api/v1/auth/login", ipUnico(), base.toUpperCase() + "\u200b@nao.com", "errada").getStatus());
+	}
 }

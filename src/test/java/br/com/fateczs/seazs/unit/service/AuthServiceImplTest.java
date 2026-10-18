@@ -131,9 +131,8 @@ public class AuthServiceImplTest {
 
 		service.login(new LoginRequest("ana@teste.com", "Segredo123"));
 
-		verify(bloqueio).exigirLiberado("ana@teste.com");
+		verify(bloqueio).reservarTentativa("ana@teste.com");
 		verify(bloqueio).registrarSucesso("ana@teste.com");
-		verify(bloqueio, never()).registrarFalha(anyString());
 	}
 
 	@Test
@@ -142,25 +141,25 @@ public class AuthServiceImplTest {
 
 		assertThrows(BadCredentialsException.class, () -> service.login(new LoginRequest("Nao.Existe@b.com", "errada")));
 
-		verify(bloqueio).registrarFalha("Nao.Existe@b.com");
+		verify(bloqueio).reservarTentativa("Nao.Existe@b.com");
 		verify(bloqueio, never()).registrarSucesso(anyString());
 	}
 
 	@Test
 	public void loginDeEmailBloqueadoNaoVerificaASenhaNemEmiteNada() {
 		org.mockito.Mockito.doThrow(new LimiteExcedidoException(Duration.ofMinutes(10))).when(bloqueio)
-				.exigirLiberado("ana@teste.com");
+				.reservarTentativa("ana@teste.com");
 
 		assertThrows(LimiteExcedidoException.class, () -> service.login(new LoginRequest("ana@teste.com", "Segredo123")));
 
 		verifyNoInteractions(authenticationManager, tokenService, refreshTokens);
-		verify(bloqueio, never()).registrarFalha(anyString());
+		verify(bloqueio, never()).registrarSucesso(anyString());
 	}
 
 	@Test
 	public void loginLegadoDeEmailBloqueadoPropaga429EmVezDeCorpoVazio() {
 		org.mockito.Mockito.doThrow(new LimiteExcedidoException(Duration.ofMinutes(10))).when(bloqueio)
-				.exigirLiberado("ana@teste.com");
+				.reservarTentativa("ana@teste.com");
 
 		assertThrows(LimiteExcedidoException.class, () -> service.loginLegado("ana@teste.com", "Segredo123"));
 
@@ -173,7 +172,7 @@ public class AuthServiceImplTest {
 
 		assertFalse(service.loginLegado("ana@teste.com", "errada").isPresent());
 
-		verify(bloqueio).registrarFalha("ana@teste.com");
+		verify(bloqueio).reservarTentativa("ana@teste.com");
 	}
 
 	@Test
