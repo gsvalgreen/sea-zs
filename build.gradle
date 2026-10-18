@@ -44,6 +44,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    // Migracoes de schema: Boot 4 modularizou o Flyway (autoconfig no starter); o suporte ao MySQL 8 e modulo a parte. Versoes do BOM.
+    implementation 'org.springframework.boot:spring-boot-starter-flyway'
+    runtimeOnly 'org.flywaydb:flyway-mysql'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'
     // Driver oficial do MySQL 8 (artefato com.mysql:mysql-connector-j, versao do BOM do Boot).
     runtimeOnly 'com.mysql:mysql-connector-j'
